@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>TYPEHAUS Admin</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css"/>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;600&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#fff;--bg2:#f5f5f3;--text:#111110;--muted:#6b6a67;--hint:#a8a7a3;--border:rgba(0,0,0,.1);--border2:rgba(0,0,0,.2);--green:#16a34a;--red:#dc2626}
+@media(prefers-color-scheme:dark){:root{--bg:#111110;--bg2:#1a1a18;--text:#f0efe9;--muted:#8a8a86;--hint:#555552;--border:rgba(255,255,255,.1);--border2:rgba(255,255,255,.2)}}
+body{font-family:'Space Grotesk',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+
+/* LOGIN */
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.login-box{background:var(--bg);border:.5px solid var(--border);border-radius:20px;padding:32px 28px;width:100%;max-width:380px}
+.login-box h1{font-size:18px;font-weight:600;margin-bottom:4px}
+.login-box p{font-size:13px;color:var(--muted);margin-bottom:24px}
+.form-group{margin-bottom:14px}
+.form-group label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px}
+.form-input{width:100%;padding:10px 12px;background:var(--bg2);border:.5px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;font-family:inherit;outline:none}
+.form-input:focus{border-color:var(--border2)}
+.btn-primary{width:100%;padding:12px;background:var(--text);color:var(--bg);border:none;border-radius:999px;font-size:14px;font-weight:500;cursor:pointer;font-family:inherit;margin-top:6px}
+.btn-primary:hover{opacity:.8}
+.msg{font-size:13px;padding:10px 12px;border-radius:8px;margin-bottom:14px;display:none}
+.msg.error{background:#fef2f2;color:var(--red);display:block}
+.msg.success{background:#f0fdf4;color:var(--green);display:block}
+
+/* ADMIN */
+#admin-panel{display:none}
+nav{position:sticky;top:0;z-index:100;background:var(--bg);border-bottom:.5px solid var(--border);padding:14px 20px;display:flex;align-items:center;justify-content:space-between}
+.logo{font-size:15px;font-weight:600;letter-spacing:.1em}
+.logo span{color:var(--muted);font-weight:400}
+.nav-right{display:flex;align-items:center;gap:10px}
+.badge{font-size:12px;padding:4px 10px;background:var(--bg2);border-radius:999px;color:var(--muted)}
+.logout-btn{background:none;border:.5px solid var(--border2);border-radius:999px;padding:6px 14px;font-size:13px;cursor:pointer;color:var(--text);font-family:inherit}
+.logout-btn:hover{background:var(--bg2)}
+
+.main{padding:20px;max-width:1200px;margin:0 auto}
+@media(min-width:880px){.main{padding:28px 32px}}
+
+/* STATS */
+.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:24px}
+@media(min-width:600px){.stats{grid-template-columns:repeat(4,1fr)}}
+.stat-card{background:var(--bg2);border-radius:16px;padding:16px}
+.stat-label{font-size:12px;color:var(--muted);margin-bottom:4px}
+.stat-value{font-size:24px;font-weight:600}
+.stat-sub{font-size:12px;color:var(--muted);margin-top:2px}
+
+/* TABS */
+.tabs{display:flex;gap:0;border-bottom:.5px solid var(--border);margin-bottom:20px}
+.tab{padding:10px 18px;font-size:14px;font-weight:500;cursor:pointer;background:none;border:none;color:var(--muted);font-family:inherit;border-bottom:2px solid transparent;margin-bottom:-1px}
+.tab.active{color:var(--text);border-bottom-color:var(--text)}
+
+/* TABLE */
+.table-wrap{overflow-x:auto;border:.5px solid var(--border);border-radius:16px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{padding:12px 16px;text-align:left;font-weight:500;color:var(--muted);border-bottom:.5px solid var(--border);background:var(--bg2);white-space:nowrap}
+td{padding:12px 16px;border-bottom:.5px solid var(--border);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--bg2)}
+.status-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:999px;font-size:11px;font-weight:500}
+.status-pending{background:#fef9c3;color:#854d0e}
+.status-success{background:#dcfce7;color:#166534}
+.status-failed{background:#fee2e2;color:#991b1b}
+.empty-state{text-align:center;padding:40px;color:var(--muted);font-size:14px}
+.loading{text-align:center;padding:40px;color:var(--muted)}
+
+/* REFRESH */
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.section-title{font-size:16px;font-weight:600}
+.refresh-btn{background:none;border:.5px solid var(--border);border-radius:999px;padding:6px 14px;font-size:13px;cursor:pointer;color:var(--muted);font-family:inherit;display:flex;align-items:center;gap:5px}
+.refresh-btn:hover{background:var(--bg2)}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login-wrap" id="login-wrap">
+  <div class="login-box">
+    <h1>TYPEHAUS Admin</h1>
+    <p>เข้าสู่ระบบสำหรับผู้ดูแล</p>
+    <div id="login-msg" class="msg"></div>
+    <div class="form-group">
+      <label>อีเมล</label>
+      <input class="form-input" type="email" id="adm-email" placeholder="admin@email.com" autocomplete="email"/>
+    </div>
+    <div class="form-group">
+      <label>รหัสผ่าน</label>
+      <input class="form-input" type="password" id="adm-pw" placeholder="••••••••" autocomplete="current-password"/>
+    </div>
+    <button class="btn-primary" onclick="adminLogin()">เข้าสู่ระบบ</button>
+  </div>
+</div>
+
+<!-- ADMIN PANEL -->
+<div id="admin-panel">
+  <nav>
+    <div class="logo">TYPE<span>HAUS</span> <span style="font-size:11px;background:var(--bg2);padding:2px 8px;border-radius:4px;margin-left:6px">ADMIN</span></div>
+    <div class="nav-right">
+      <span class="badge" id="admin-email-badge"></span>
+      <button class="logout-btn" onclick="adminLogout()"><i class="ti ti-logout"></i></button>
+    </div>
+  </nav>
+
+  <div class="main">
+    <!-- STATS -->
+    <div class="stats">
+      <div class="stat-card">
+        <div class="stat-label">ยอดขายรวม</div>
+        <div class="stat-value" id="stat-revenue">-</div>
+        <div class="stat-sub">บาท</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Orders ทั้งหมด</div>
+        <div class="stat-value" id="stat-orders">-</div>
+        <div class="stat-sub">รายการ</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Users ทั้งหมด</div>
+        <div class="stat-value" id="stat-users">-</div>
+        <div class="stat-sub">คน</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">วันนี้</div>
+        <div class="stat-value" id="stat-today">-</div>
+        <div class="stat-sub">orders</div>
+      </div>
+    </div>
+
+    <!-- TABS -->
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('orders',this)">Orders</button>
+      <button class="tab" onclick="switchTab('users',this)">Users</button>
+      <button class="tab" onclick="switchTab('purchases',this)">Purchases</button>
+    </div>
+
+    <!-- ORDERS TAB -->
+    <div id="tab-orders">
+      <div class="section-header">
+        <div class="section-title">รายการ Orders</div>
+        <button class="refresh-btn" onclick="loadOrders()"><i class="ti ti-refresh"></i> รีเฟรช</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th>Order ID</th>
+            <th>User</th>
+            <th>ฟอนต์</th>
+            <th>ยอด</th>
+            <th>Status</th>
+            <th>วันที่</th>
+          </tr></thead>
+          <tbody id="orders-body"><tr><td colspan="6" class="loading">กำลังโหลด...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- USERS TAB -->
+    <div id="tab-users" style="display:none">
+      <div class="section-header">
+        <div class="section-title">รายชื่อ Users</div>
+        <button class="refresh-btn" onclick="loadUsers()"><i class="ti ti-refresh"></i> รีเฟรช</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th>User ID</th>
+            <th>Email</th>
+            <th>สมัครเมื่อ</th>
+            <th>Login ล่าสุด</th>
+          </tr></thead>
+          <tbody id="users-body"><tr><td colspan="4" class="loading">กำลังโหลด...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- PURCHASES TAB -->
+    <div id="tab-purchases" style="display:none">
+      <div class="section-header">
+        <div class="section-title">รายการซื้อฟอนต์</div>
+        <button class="refresh-btn" onclick="loadPurchases()"><i class="ti ti-refresh"></i> รีเฟรช</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th>User</th>
+            <th>ฟอนต์</th>
+            <th>Order ID</th>
+            <th>วันที่</th>
+          </tr></thead>
+          <tbody id="purchases-body"><tr><td colspan="4" class="loading">กำลังโหลด...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const SB_URL = 'https://piivygeapqvhjuppxhuy.supabase.co';
+const SB_KEY = 'sb_publishable_Mt7Of9hnsKpY8zczoTQtyg_zgGwqCyP';
+const sb = supabase.createClient(SB_URL, SB_KEY);
+
+// กำหนด admin email ที่อนุญาต
+const ADMIN_EMAILS = ['jettarin2545@icloud.com']; // เปลี่ยนเป็นอีเมลคุณ
+
+const fontNames = {1:'Misaimai',2:'Mimonju',3:'Bakery',4:'Satajun',5:'MiPie',6:'Syne Extra'};
+
+let currentUser = null;
+
+sb.auth.onAuthStateChange((event, session) => {
+  currentUser = session?.user || null;
+  if (currentUser && ADMIN_EMAILS.includes(currentUser.email)) {
+    showAdminPanel();
+  } else if (currentUser) {
+    showMsg('คุณไม่มีสิทธิ์เข้าถึงหน้านี้', 'error');
+    sb.auth.signOut();
+  }
+});
+
+async function adminLogin() {
+  const email = document.getElementById('adm-email').value;
+  const pw = document.getElementById('adm-pw').value;
+  showMsg('', '');
+  const { error } = await sb.auth.signInWithPassword({ email, password: pw });
+  if (error) { showMsg(error.message, 'error'); return; }
+}
+
+async function adminLogout() {
+  await sb.auth.signOut();
+  document.getElementById('admin-panel').style.display = 'none';
+  document.getElementById('login-wrap').style.display = 'flex';
+}
+
+function showAdminPanel() {
+  document.getElementById('login-wrap').style.display = 'none';
+  document.getElementById('admin-panel').style.display = 'block';
+  document.getElementById('admin-email-badge').textContent = currentUser.email.split('@')[0];
+  loadStats();
+  loadOrders();
+}
+
+function showMsg(msg, type) {
+  const el = document.getElementById('login-msg');
+  el.textContent = msg;
+  el.className = 'msg' + (msg ? ' ' + type : '');
+}
+
+// STATS
+async function loadStats() {
+  const [ordersRes, purchasesRes] = await Promise.all([
+    sb.from('orders').select('total, created_at, status'),
+    sb.from('purchases').select('id')
+  ]);
+
+  const orders = ordersRes.data || [];
+  const total = orders.reduce((s, o) => s + (o.total || 0), 0);
+  const today = orders.filter(o => new Date(o.created_at).toDateString() === new Date().toDateString()).length;
+
+  document.getElementById('stat-revenue').textContent = '฿' + total.toLocaleString();
+  document.getElementById('stat-orders').textContent = orders.length;
+  document.getElementById('stat-today').textContent = today;
+
+  // users count via auth (need service role, so estimate from orders)
+  const uniqueUsers = [...new Set(orders.map(o => o.user_id))].length;
+  document.getElementById('stat-users').textContent = uniqueUsers + '+';
+}
+
+// ORDERS
+async function loadOrders() {
+  document.getElementById('orders-body').innerHTML = '<tr><td colspan="6" class="loading">กำลังโหลด...</td></tr>';
+  const { data, error } = await sb.from('orders').select('*').order('created_at', { ascending: false });
+  if (error || !data?.length) {
+    document.getElementById('orders-body').innerHTML = '<tr><td colspan="6" class="empty-state">ยังไม่มี orders</td></tr>';
+    return;
+  }
+  document.getElementById('orders-body').innerHTML = data.map(o => {
+    const fonts = (o.font_ids || []).map(id => fontNames[id] || 'Font #' + id).join(', ');
+    const d = new Date(o.created_at).toLocaleDateString('th-TH', { day: '2-digit', month: 'short', year: '2-digit', hour: '2-digit', minute: '2-digit' });
+    const statusClass = o.status === 'pending' ? 'status-pending' : o.status === 'success' ? 'status-success' : 'status-pending';
+    return `<tr>
+      <td style="font-family:monospace;font-size:11px;color:var(--muted)">${o.id.substring(0,8)}...</td>
+      <td style="font-size:11px;color:var(--muted)">${(o.user_id || '').substring(0,8)}...</td>
+      <td>${fonts}</td>
+      <td style="font-weight:600">฿${(o.total||0).toLocaleString()}</td>
+      <td><span class="status-badge ${statusClass}">${o.status || 'pending'}</span></td>
+      <td style="color:var(--muted)">${d}</td>
+    </tr>`;
+  }).join('');
+}
+
+// USERS
+async function loadUsers() {
+  document.getElementById('users-body').innerHTML = '<tr><td colspan="4" class="loading">กำลังโหลด...</td></tr>';
+  // ดึง unique users จาก orders แทน (ไม่ต้องใช้ service role)
+  const { data, error } = await sb.from('orders').select('user_id, created_at').order('created_at', { ascending: false });
+  if (error || !data?.length) {
+    document.getElementById('users-body').innerHTML = '<tr><td colspan="4" class="empty-state">ยังไม่มี users</td></tr>';
+    return;
+  }
+  const seen = new Set();
+  const unique = data.filter(r => { if (seen.has(r.user_id)) return false; seen.add(r.user_id); return true; });
+  document.getElementById('users-body').innerHTML = unique.map(u => {
+    const d = new Date(u.created_at).toLocaleDateString('th-TH');
+    return `<tr>
+      <td style="font-family:monospace;font-size:11px;color:var(--muted)">${(u.user_id||'').substring(0,12)}...</td>
+      <td>-</td>
+      <td style="color:var(--muted)">${d}</td>
+      <td style="color:var(--muted)">-</td>
+    </tr>`;
+  }).join('');
+}
+
+// PURCHASES
+async function loadPurchases() {
+  document.getElementById('purchases-body').innerHTML = '<tr><td colspan="4" class="loading">กำลังโหลด...</td></tr>';
+  const { data, error } = await sb.from('purchases').select('*').order('created_at', { ascending: false });
+  if (error || !data?.length) {
+    document.getElementById('purchases-body').innerHTML = '<tr><td colspan="4" class="empty-state">ยังไม่มีรายการซื้อ</td></tr>';
+    return;
+  }
+  document.getElementById('purchases-body').innerHTML = data.map(p => {
+    const d = new Date(p.created_at).toLocaleDateString('th-TH');
+    return `<tr>
+      <td style="font-family:monospace;font-size:11px;color:var(--muted)">${(p.user_id||'').substring(0,8)}...</td>
+      <td>${fontNames[p.font_id] || 'Font #' + p.font_id}</td>
+      <td style="font-family:monospace;font-size:11px;color:var(--muted)">${(p.order_id||'').substring(0,8)}...</td>
+      <td style="color:var(--muted)">${d}</td>
+    </tr>`;
+  }).join('');
+}
+
+function switchTab(name, btn) {
+  ['orders','users','purchases'].forEach(t => {
+    document.getElementById('tab-'+t).style.display = t === name ? 'block' : 'none';
+  });
+  document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  if (name === 'orders') loadOrders();
+  if (name === 'users') loadUsers();
+  if (name === 'purchases') loadPurchases();
+}
+</script>
+</body>
+</html>
