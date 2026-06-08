@@ -448,6 +448,83 @@ function closePay(){ document.getElementById('pay-modal').classList.remove('open
 function closePayOut(e){ if(e.target===document.getElementById('pay-modal')) closePay(); }
 
 render();
+
+// ---- HANDLE PASSWORD RESET FROM EMAIL LINK ----
+async function handleAuthCallback() {
+  const hash = window.location.hash;
+  const params = new URLSearchParams(hash.replace('#', '?'));
+  const type = params.get('type');
+  const accessToken = params.get('access_token');
+
+  if (type === 'recovery' && accessToken) {
+    // Set the session from the token
+    await sb.auth.setSession({
+      access_token: accessToken,
+      refresh_token: params.get('refresh_token') || ''
+    });
+    // Show new password modal
+    showNewPasswordModal();
+    // Clean up URL
+    window.history.replaceState({}, document.title, window.location.pathname);
+  }
+}
+
+function showNewPasswordModal() {
+  const existing = document.getElementById('newpw-modal');
+  if (existing) existing.remove();
+
+  const modal = document.createElement('div');
+  modal.id = 'newpw-modal';
+  modal.style.cssText = 'position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:20px';
+  modal.innerHTML = `
+    <div style="background:var(--bg);border-radius:20px;padding:28px 24px;width:100%;max-width:400px;position:relative">
+      <h2 style="font-size:17px;font-weight:600;margin-bottom:6px">&#3605;&#3633;&#3657;&#3591;&#3619;&#3627;&#3633;&#3626;&#3612;&#3656;&#3634;&#3609;&#3651;&#3627;&#3617;&#3656;</h2>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:20px">&#3585;&#3619;&#3629;&#3585;&#3619;&#3627;&#3633;&#3626;&#3612;&#3656;&#3634;&#3609;&#3651;&#3627;&#3617;&#3656;&#3582;&#3629;&#3591;&#3588;&#3640;&#3603;</p>
+      <div id="newpw-msg" style="font-size:13px;padding:10px 12px;border-radius:8px;margin-bottom:14px;display:none"></div>
+      <div style="margin-bottom:14px">
+        <label style="display:block;font-size:12px;color:var(--muted);margin-bottom:5px">&#3619;&#3627;&#3633;&#3626;&#3612;&#3656;&#3634;&#3609;&#3651;&#3627;&#3617;&#3656;</label>
+        <input id="newpw-input" type="password" autocomplete="new-password" placeholder="&#3629;&#3618;&#3656;&#3634;&#3591;&#3609;&#3657;&#3629;&#3618; 6 &#3605;&#3633;&#3623;" style="width:100%;padding:10px 12px;background:var(--bg2);border:.5px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;font-family:inherit;outline:none"/>
+      </div>
+      <div style="margin-bottom:18px">
+        <label style="display:block;font-size:12px;color:var(--muted);margin-bottom:5px">&#3618;&#3639;&#3609;&#3618;&#3633;&#3609;&#3619;&#3627;&#3633;&#3626;&#3612;&#3656;&#3634;&#3609;</label>
+        <input id="newpw-confirm" type="password" autocomplete="new-password" placeholder="&#3614;&#3636;&#3617;&#3614;&#3660;&#3624;&#3635;" style="width:100%;padding:10px 12px;background:var(--bg2);border:.5px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;font-family:inherit;outline:none"/>
+      </div>
+      <button onclick="doUpdatePassword()" style="width:100%;padding:12px;background:var(--text);color:var(--bg);border:none;border-radius:999px;font-size:14px;font-weight:500;cursor:pointer;font-family:inherit">&#3610;&#3633;&#3609;&#3607;&#3638;&#3585;&#3619;&#3627;&#3633;&#3626;&#3612;&#3656;&#3634;&#3609;&#3651;&#3627;&#3617;&#3656;</button>
+    </div>`;
+  document.body.appendChild(modal);
+}
+
+async function doUpdatePassword() {
+  const pw = document.getElementById('newpw-input').value;
+  const confirm = document.getElementById('newpw-confirm').value;
+  const msg = document.getElementById('newpw-msg');
+
+  if (pw.length < 6) {
+    msg.textContent = '&#3619;&#3627;&#3633;&#3626;&#3612;&#3656;&#3634;&#3609;&#3605;&#3657;&#3629;&#3591;&#3617;&#3637;&#3629;&#3618;&#3656;&#3634;&#3591;&#3609;&#3657;&#3629;&#3618; 6 &#3605;&#3633;&#3623;';
+    msg.style.cssText = 'font-size:13px;padding:10px 12px;border-radius:8px;margin-bottom:14px;background:#fef2f2;color:#dc2626;display:block';
+    return;
+  }
+  if (pw !== confirm) {
+    msg.textContent = '&#3619;&#3627;&#3633;&#3626;&#3612;&#3656;&#3634;&#3609;&#3652;&#3617;&#3656;&#3605;&#3619;&#3591;&#3585;&#3633;&#3609;';
+    msg.style.cssText = 'font-size:13px;padding:10px 12px;border-radius:8px;margin-bottom:14px;background:#fef2f2;color:#dc2626;display:block';
+    return;
+  }
+
+  const { error } = await sb.auth.updateUser({ password: pw });
+  if (error) {
+    msg.textContent = error.message;
+    msg.style.cssText = 'font-size:13px;padding:10px 12px;border-radius:8px;margin-bottom:14px;background:#fef2f2;color:#dc2626;display:block';
+  } else {
+    msg.textContent = '&#3648;&#3611;&#3621;&#3637;&#3656;&#3618;&#3609;&#3619;&#3627;&#3633;&#3626;&#3612;&#3656;&#3634;&#3609;&#3626;&#3635;&#3648;&#3619;&#3655;&#3592;!';
+    msg.style.cssText = 'font-size:13px;padding:10px 12px;border-radius:8px;margin-bottom:14px;background:#f0fdf4;color:#16a34a;display:block';
+    setTimeout(() => {
+      document.getElementById('newpw-modal').remove();
+    }, 1500);
+  }
+}
+
+// Run on page load
+handleAuthCallback();
 </script>
 </body>
 </html>
