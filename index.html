@@ -152,14 +152,14 @@ nav{position:sticky;top:0;z-index:100;background:var(--bg);border-bottom:.5px so
     </div>
     <div id="auth-msg" class="auth-msg"></div>
     <div id="f-login">
-      <div class="form-group"><label>&#3629;&#3637;&#3648;&#3617;&#3621;</label><input class="form-input" type="email" id="li-email" placeholder="you@email.com"/></div>
-      <div class="form-group"><label>&#3619;&#3627;&#3633;&#3626;&#3612;&#3656;&#3634;&#3609;</label><input class="form-input" type="password" id="li-pw" placeholder="&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;"/></div>
+      <div class="form-group"><label>&#3629;&#3637;&#3648;&#3617;&#3621;</label><input class="form-input" type="email" id="li-email" autocomplete="email" placeholder="you@email.com"/></div>
+      <div class="form-group"><label>&#3619;&#3627;&#3633;&#3626;&#3612;&#3656;&#3634;&#3609;</label><input class="form-input" type="password" id="li-pw" autocomplete="current-password" placeholder="&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;"/></div>
       <button class="auth-submit" onclick="doLogin()">&#3648;&#3586;&#3657;&#3634;&#3626;&#3641;&#3656;&#3619;&#3632;&#3610;&#3610;</button>
       <div class="auth-link"><a onclick="showReset()">&#3621;&#3639;&#3617;&#3619;&#3627;&#3633;&#3626;&#3612;&#3656;&#3634;&#3609;?</a></div>
     </div>
     <div id="f-reg" style="display:none">
-      <div class="form-group"><label>&#3629;&#3637;&#3648;&#3617;&#3621;</label><input class="form-input" type="email" id="reg-email" placeholder="you@email.com"/></div>
-      <div class="form-group"><label>&#3619;&#3627;&#3633;&#3626;&#3612;&#3656;&#3634;&#3609;</label><input class="form-input" type="password" id="reg-pw" placeholder="&#3629;&#3618;&#3656;&#3634;&#3591;&#3609;&#3657;&#3629;&#3618; 6 &#3605;&#3633;&#3623;"/></div>
+      <div class="form-group"><label>&#3629;&#3637;&#3648;&#3617;&#3621;</label><input class="form-input" type="email" id="reg-email" autocomplete="email" placeholder="you@email.com"/></div>
+      <div class="form-group"><label>&#3619;&#3627;&#3633;&#3626;&#3612;&#3656;&#3634;&#3609;</label><input class="form-input" type="password" id="reg-pw" autocomplete="new-password" placeholder="&#3629;&#3618;&#3656;&#3634;&#3591;&#3609;&#3657;&#3629;&#3618; 6 &#3605;&#3633;&#3623;"/></div>
       <button class="auth-submit" onclick="doReg()">&#3626;&#3617;&#3633;&#3588;&#3619;&#3626;&#3617;&#3634;&#3594;&#3636;&#3585;</button>
     </div>
     <div id="f-reset" style="display:none">
