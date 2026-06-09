@@ -241,7 +241,7 @@ const fonts = [
 ];
 
 // ---- STATE ----
-let cart=[], inputCache={}, imgCache={}, currentUser=null, currentPayment=null, paymentPollTimer=null;
+let cart=[], inputCache={}, imgCache={}, currentUser=null, currentPayment=null, paymentPollTimer=null, paymentCompletedHandled=false;
 let ownedFontIds=new Set();
 
 // ---- DEFAULT IMAGES from hidden HTML tags ----
@@ -483,6 +483,7 @@ function setPaymentStatus(status,label){
 }
 function resetPaymentUi(){
   currentPayment=null;
+  paymentCompletedHandled=false;
   if(paymentPollTimer){ clearInterval(paymentPollTimer); paymentPollTimer=null; }
   document.getElementById('payment-result').classList.remove('open');
   document.getElementById('payment-qr-box').style.display='none';
@@ -561,6 +562,14 @@ function renderPaymentResult(raw){
   }
   result.classList.add('open');
 }
+async function handlePaidPayment(){
+  if(paymentCompletedHandled) return;
+  paymentCompletedHandled=true;
+  cart=[];
+  await refreshOwnedFonts();
+  document.getElementById('pay-modal').classList.remove('open');
+  openPurchases();
+}
 async function pollPaymentStatus(orderId){
   if(paymentPollTimer) clearInterval(paymentPollTimer);
   paymentPollTimer=setInterval(async()=>{
@@ -570,7 +579,7 @@ async function pollPaymentStatus(orderId){
       if(!data) return;
       const normalized=normalizePaymentResponse(data);
       if(currentPayment && normalized.status!==currentPayment.status) renderPaymentResult({...currentPayment,...normalized});
-      if(normalized.status==='paid'){ await refreshOwnedFonts(); }
+      if(normalized.status==='paid'){ await handlePaidPayment(); }
       if(normalized.status==='paid' || normalized.status==='failed'){
         clearInterval(paymentPollTimer);
         paymentPollTimer=null;
