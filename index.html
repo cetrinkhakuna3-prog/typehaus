@@ -393,6 +393,8 @@ let paymentSuccessConfirmTimer=null;
 let ownedFontIds=new Set();
 let lastPaidCartSignature='';
 let previewFocusTimers={};
+let activePreviewFocusId=null;
+let lastPreviewFocusAt=0;
 
 // ---- DEFAULT IMAGES from hidden HTML tags ----
 function getDefaultSrc(id) {
@@ -609,7 +611,7 @@ function render(){
           <div class="font-files-title">ไฟล์ฟอนต์</div>
           <div class="font-file-links">${links || empty}</div>
         </div>
-        <input class="type-input" id="ti-${f.id}" style="font-family:${f.family}" placeholder="Type to preview font on image..." onfocus="focusPreview(${f.id})" oninput="updatePreview(${f.id},this.value); focusPreview(${f.id})"/>
+        <input class="type-input" id="ti-${f.id}" style="font-family:${f.family}" placeholder="Type to preview font on image..." onfocus="focusPreview(${f.id})" oninput="updatePreview(${f.id},this.value)"/>
         <div class="card-footer">
           <div><div class="price">&#3647;${f.price.toLocaleString()}</div><span class="price-sub">Lifetime license</span></div>
           <button class="add-btn ${cart.find(c=>c.id===f.id)?'added':''}" id="ab-${f.id}" onclick="toggleCart(${f.id})">
@@ -657,6 +659,10 @@ function updatePreview(id,val){
 }
 function focusPreview(id){
   if(!window.matchMedia('(max-width: 720px)').matches) return;
+  const now=Date.now();
+  if(activePreviewFocusId===id && now-lastPreviewFocusAt<1800) return;
+  activePreviewFocusId=id;
+  lastPreviewFocusAt=now;
   const input=document.getElementById('ti-'+id);
   const imgArea=input?.closest('.card')?.querySelector('.img-area');
   if(!imgArea) return;
