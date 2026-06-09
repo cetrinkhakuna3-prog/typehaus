@@ -105,9 +105,12 @@ nav{position:sticky;top:0;z-index:100;background:var(--bg);border-bottom:.5px so
 .card-footer{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .price{font-size:16px;font-weight:600}
 .price-sub{font-size:11px;color:var(--muted);display:block;margin-top:1px}
+.card-actions{display:flex;align-items:center;gap:7px;flex-shrink:0}
 .add-btn{background:var(--text);color:var(--bg);border:none;border-radius:999px;padding:8px 18px;font-size:13px;cursor:pointer;white-space:nowrap;font-family:inherit;font-weight:500;display:flex;align-items:center;gap:5px;transition:opacity .15s}
 .add-btn:hover{opacity:.75}
 .add-btn.added{background:none;color:var(--text);border:.5px solid var(--border2)}
+.license-trigger{background:none;color:var(--text);border:.5px solid var(--border2);border-radius:999px;padding:8px 12px;font-size:13px;cursor:pointer;white-space:nowrap;font-family:inherit;font-weight:500;display:flex;align-items:center;gap:5px;transition:background .15s,border-color .15s}
+.license-trigger:hover{background:var(--bg2)}
 .license-modal-title{font-size:12px;color:var(--muted);margin-bottom:6px}
 .license-modal-name{font-size:16px;font-weight:600;margin-bottom:14px}
 .license-options{display:grid;grid-template-columns:1fr;gap:8px}
@@ -627,7 +630,7 @@ function render(){
     const selectedLicense=selectedLicenses[f.id]||'';
     const cartItem=cart.find(c=>c.id===f.id);
     const selectedLicenseLabel=getLicense(selectedLicense)?.label||'เลือกรูปแบบ';
-    const actionLabel=cartItem?'<i class="ti ti-check" style="font-size:14px"></i> Added':selectedLicense?'<i class="ti ti-plus" style="font-size:14px"></i> Add':'<i class="ti ti-license" style="font-size:14px"></i> เลือกรูปแบบ';
+    const actionLabel=cartItem?'<i class="ti ti-check" style="font-size:14px"></i> Added':'<i class="ti ti-plus" style="font-size:14px"></i> Add';
     const links=owned
       ? (f.files||[]).map(file=>`<a class="font-file-link" href="./assets/fonts/${file}" download><i class="ti ti-download"></i><span>${file}</span></a>`).join('')
       : '';
@@ -653,9 +656,10 @@ function render(){
         <input class="type-input" id="ti-${f.id}" style="font-family:${f.family}" placeholder="Type to preview font on image..." onfocus="focusPreview(${f.id})" oninput="updatePreview(${f.id},this.value)"/>
         <div class="card-footer">
           <div><div class="price">&#3647;${f.price.toLocaleString()}</div><span class="price-sub">${cartItem?cartItem.licenseLabel:selectedLicenseLabel}</span></div>
-          <button class="add-btn ${cartItem?'added':''}" id="ab-${f.id}" onclick="toggleCart(${f.id})">
-            ${actionLabel}
-          </button>
+          <div class="card-actions">
+            <button class="license-trigger" type="button" onclick="openLicensePicker(${f.id})"><i class="ti ti-adjustments-horizontal" style="font-size:14px"></i> รูปแบบ</button>
+            <button class="add-btn ${cartItem?'added':''}" id="ab-${f.id}" onclick="toggleCart(${f.id})">${actionLabel}</button>
+          </div>
         </div>
       </div>
     </div>`;}).join('');
