@@ -672,7 +672,7 @@ function render(){
           <div><div class="price">&#3647;${f.price.toLocaleString()}</div><span class="price-sub">${cartItem?cartItem.licenseLabel:selectedLicenseLabel}</span></div>
           <div class="card-actions">
             <button class="license-trigger" type="button" onclick="openLicensePicker(${f.id})"><i class="ti ti-adjustments-horizontal" style="font-size:14px"></i> รูปแบบ</button>
-            <button class="add-btn ${cartItem?'added':''}" id="ab-${f.id}" onclick="toggleCart(${f.id})">${actionLabel}</button>
+            <button class="add-btn ${cartItem?'added':''}" id="ab-${f.id}" onclick="event.stopPropagation();toggleCart(${f.id})">${actionLabel}</button>
           </div>
         </div>
         ${activeLicenseFontId===f.id?renderLicensePopover(f):''}
