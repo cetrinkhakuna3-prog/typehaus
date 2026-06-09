@@ -261,6 +261,7 @@ nav{position:sticky;top:0;z-index:100;background:var(--bg);border-bottom:.5px so
 // ---- SUPABASE ----
 const SB_URL = window.AUTH_CONFIG?.supabaseUrl || 'https://piivygeapqvhjuppxhuy.supabase.co';
 const SB_KEY = window.AUTH_CONFIG?.supabaseAnonKey || 'sb_publishable_Mt7Of9hnsKpY8zczoTQtyg_zgGwqCyP';
+let recoveryUrlHash = window.location.hash || '';
 const sb = supabase.createClient(SB_URL, SB_KEY, {
   auth: {
     persistSession: true,
@@ -302,9 +303,14 @@ function getDefaultSrc(id) {
 }
 
 // ---- AUTH ----
-sb.auth.onAuthStateChange((_,s)=>{ 
+sb.auth.onAuthStateChange((event,s)=>{ 
   currentUser=s?.user||null; 
   renderUserArea();
+  if(event==='PASSWORD_RECOVERY' || getRecoveryTokens()){
+    openAuth();
+    showRecovery();
+    showMsg('Please set your new password','success');
+  }
   refreshOwnedFonts().then(handlePaymentReturn);
 });
 
@@ -338,7 +344,7 @@ async function doReset(){
 async function doLogout(){ await sb.auth.signOut(); }
 
 function getRecoveryTokens(){
-  const hash=window.location.hash.replace(/^#/,'');
+  const hash=(window.location.hash || recoveryUrlHash || '').replace(/^#/,'');
   if(!hash) return null;
   const params=new URLSearchParams(hash);
   const type=params.get('type');
@@ -362,6 +368,7 @@ async function completePasswordReset(){
   if(sessionError){ showMsg(sessionError.message,'error'); return; }
   const {error}=await sb.auth.updateUser({ password });
   if(error){ showMsg(error.message,'error'); return; }
+  recoveryUrlHash='';
   window.history.replaceState({},'',window.location.pathname);
   showMsg('Password changed successfully','success');
   setTimeout(()=>{ showLogin(); closeAuth(); },900);
