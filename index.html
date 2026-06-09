@@ -60,14 +60,16 @@ nav{position:sticky;top:0;z-index:100;background:var(--bg);border-bottom:.5px so
 .font-details-btn{white-space:nowrap;border:1px solid var(--border);background:var(--bg);color:var(--muted);padding:3px 8px;font-size:11px;font-weight:400;cursor:pointer;display:inline-flex;align-items:center;gap:4px;border-radius:10px}
 .font-details-btn:hover{text-decoration:none;border-color:var(--border2);background:#fff}
 .font-strip-divider{font-size:12px;color:var(--hint);line-height:1}
-.font-details-panel{display:none;margin-top:8px;border:.5px solid var(--border);border-radius:12px;background:linear-gradient(180deg,#fff,var(--bg2));padding:18px;box-shadow:0 18px 40px rgba(15,23,42,.08)}
+.font-details-panel{display:none;margin-top:8px;border:.5px solid var(--border);border-radius:12px;background:var(--bg2);padding:14px;box-shadow:none}
 .font-details-panel.open{display:block;animation:detailsRise .24s ease both}
 .font-details-grid{display:grid;grid-template-columns:1fr;gap:14px}
 @media(min-width:760px){.font-details-grid{grid-template-columns:repeat(2,1fr)}}
-.font-detail-card{border:.5px solid var(--border);border-radius:10px;background:#fff;padding:14px}
+.font-detail-card{border:.5px solid var(--border);border-radius:10px;background:var(--bg);padding:14px}
 .font-detail-card h3{font-size:13px;margin-bottom:8px;color:var(--text)}
 .font-detail-card p,.font-detail-card li{font-size:12px;color:var(--muted);line-height:1.65}
 .font-detail-card ul{padding-left:18px}
+.font-details-collapse{margin-top:14px;width:100%;border:.5px solid var(--border);border-radius:10px;background:var(--bg);color:var(--muted);padding:9px 12px;font-size:12px;font-family:inherit;cursor:pointer}
+.font-details-collapse:hover{border-color:var(--border2);color:var(--text)}
 @keyframes detailsRise{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
 .grid{padding:20px;display:grid;grid-template-columns:1fr;gap:16px}
 @media(min-width:580px){.grid{grid-template-columns:repeat(2,1fr)}}
@@ -245,6 +247,7 @@ nav{position:sticky;top:0;z-index:100;background:var(--bg);border-bottom:.5px so
       <section class="font-detail-card"><h3>ข้อมูลการดาวน์โหลด</h3><ul><li>ดาวน์โหลดได้ทันทีหลังชำระเงิน</li><li>ไม่มีการจัดส่งสินค้าแบบกายภาพ</li><li>เป็นสินค้าดิจิทัล 100%</li></ul></section>
       <section class="font-detail-card"><h3>นโยบายการคืนเงิน</h3><p>เนื่องจากเป็นสินค้าดิจิทัลที่สามารถดาวน์โหลดได้ทันที หลังจากดาวน์โหลดแล้วไม่สามารถขอคืนเงินได้ กรุณาตรวจสอบรายละเอียดก่อนสั่งซื้อ</p></section>
     </div>
+    <button class="font-details-collapse" type="button" onclick="toggleFontDetails()">ย่อรายละเอียด</button>
   </div>
 </div>
 <script>
