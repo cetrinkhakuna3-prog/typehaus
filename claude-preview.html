@@ -234,7 +234,7 @@ nav{position:sticky;top:0;z-index:100;background:var(--bg);border-bottom:.5px so
     <span class="app-logo" title="Keynote" aria-label="Keynote"><img src="assets/app-icons/keynote.jpg" alt="Keynote" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'app-logo-fallback keynote',textContent:'Key'}))"></span>
     <span class="app-logo" title="Pixelmator Pro" aria-label="Pixelmator Pro"><img src="assets/app-icons/pixelmator-pro.png" alt="Pixelmator Pro" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'app-logo-fallback pixelmator',textContent:'Pix'}))"></span>
   </div>
-  <div class="app-strip-heading">
+  <div class="app-strip-heading" id="font-details-heading">
     <div class="app-strip-label">โปรแกรมที่รองรับ <span class="font-strip-divider">•</span></div>
     <button class="font-details-btn" type="button" onclick="toggleFontDetails()">อ่านรายละเอียดเกี่ยวกับฟอนต์เพิ่มเติม</button>
   </div>
@@ -247,7 +247,7 @@ nav{position:sticky;top:0;z-index:100;background:var(--bg);border-bottom:.5px so
       <section class="font-detail-card"><h3>ข้อมูลการดาวน์โหลด</h3><ul><li>ดาวน์โหลดได้ทันทีหลังชำระเงิน</li><li>ไม่มีการจัดส่งสินค้าแบบกายภาพ</li><li>เป็นสินค้าดิจิทัล 100%</li></ul></section>
       <section class="font-detail-card"><h3>นโยบายการคืนเงิน</h3><p>เนื่องจากเป็นสินค้าดิจิทัลที่สามารถดาวน์โหลดได้ทันที หลังจากดาวน์โหลดแล้วไม่สามารถขอคืนเงินได้ กรุณาตรวจสอบรายละเอียดก่อนสั่งซื้อ</p></section>
     </div>
-    <button class="font-details-collapse" type="button" onclick="toggleFontDetails()">ย่อรายละเอียด</button>
+    <button class="font-details-collapse" type="button" onclick="collapseFontDetails()">ย่อรายละเอียด</button>
   </div>
 </div>
 <script>
@@ -265,6 +265,15 @@ function toggleFontDetails(){
   const panel=document.getElementById('font-details-panel');
   if(!panel) return;
   panel.classList.toggle('open');
+}
+function collapseFontDetails(){
+  const panel=document.getElementById('font-details-panel');
+  const heading=document.getElementById('font-details-heading');
+  if(panel) panel.classList.remove('open');
+  if(heading){
+    const top=heading.getBoundingClientRect().top+window.scrollY-18;
+    window.scrollTo({top:Math.max(0,top),behavior:'smooth'});
+  }
 }
 </script>
 
