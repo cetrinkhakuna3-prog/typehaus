@@ -118,6 +118,8 @@ nav{position:sticky;top:0;z-index:100;background:var(--bg);border-bottom:.5px so
 .qr-box img{width:min(100%,240px);height:auto;display:block}
 .pay-note{font-size:12px;line-height:1.55;color:var(--muted)}
 .pay-code{margin-top:10px;padding:10px 12px;border-radius:12px;background:var(--bg);border:.5px solid var(--border);font-size:12px;word-break:break-all}
+.pay-success{margin-top:10px;padding:10px 12px;border-radius:12px;background:#ecfdf5;border:1px solid #bbf7d0;color:#065f46;font-size:12px;line-height:1.5}
+.pay-confirm-btn{display:none;margin-top:10px;border:0;border-radius:999px;padding:9px 14px;background:#065f46;color:#fff;font-size:12px;cursor:pointer;font-family:inherit;font-weight:600}
 .pay-link{display:inline-flex;align-items:center;gap:6px;margin-top:12px;font-size:13px;color:var(--text)}
 .payment-frame-wrap{margin-top:12px;border:1px solid var(--border);border-radius:18px;background:#fff;overflow:hidden;box-shadow:0 12px 30px rgba(0,0,0,.08)}
 .payment-frame-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border-bottom:1px solid var(--border);font-size:12px;color:var(--muted);background:#fafafa}
@@ -128,6 +130,14 @@ nav{position:sticky;top:0;z-index:100;background:var(--bg);border-bottom:.5px so
 .pay-btn{width:100%;padding:13px;background:var(--text);color:var(--bg);border:none;border-radius:999px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;transition:opacity .15s}
 .pay-btn:hover{opacity:.8}
 .pay-btn:disabled{opacity:.4;cursor:not-allowed}
+.admin-modal{max-width:960px}
+.admin-table-wrap{overflow:auto;border:.5px solid var(--border);border-radius:14px}
+.admin-table{width:100%;min-width:760px;border-collapse:collapse;font-size:12px}
+.admin-table th,.admin-table td{padding:10px 12px;border-bottom:.5px solid var(--border);text-align:left;vertical-align:top}
+.admin-table th{background:var(--bg2);font-weight:600}
+.admin-table td.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;word-break:break-all}
+.admin-note{font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.5}
+.admin-empty{padding:24px 0;text-align:center;color:var(--muted)}
 @keyframes spin{to{transform:rotate(360deg)}}
 .spinner{display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;margin-right:6px;vertical-align:middle}
 .user-badge{font-size:12px;padding:4px 10px;background:var(--bg2);border-radius:999px;color:var(--muted)}
@@ -147,6 +157,7 @@ nav{position:sticky;top:0;z-index:100;background:var(--bg);border-bottom:.5px so
 <nav>
   <div class="logo">TYPE<span>HAUS</span></div>
   <div class="nav-right">
+    <div id="admin-area"></div>
     <div id="user-area"><button class="user-btn" onclick="openAuth()"><i class="ti ti-user"></i> &#3648;&#3586;&#3657;&#3634;&#3626;&#3641;&#3656;&#3619;&#3632;&#3610;&#3610;</button></div>
     <button class="cart-btn" onclick="openCart()"><i class="ti ti-shopping-bag"></i> &#3605;&#3632;&#3585;&#3619;&#3657;&#3634; <span class="cart-count" id="cart-count">0</span></button>
   </div>
@@ -178,23 +189,30 @@ nav{position:sticky;top:0;z-index:100;background:var(--bg);border-bottom:.5px so
       <button class="auth-tab" id="tab-reg" onclick="switchTab('reg')">&#3626;&#3617;&#3633;&#3588;&#3619;&#3626;&#3617;&#3634;&#3594;&#3636;&#3585;</button>
     </div>
     <div id="auth-msg" class="auth-msg"></div>
-    <div id="f-login">
-      <div class="form-group"><label>&#3629;&#3637;&#3648;&#3617;&#3621;</label><input class="form-input" type="email" id="li-email" placeholder="you@email.com"/></div>
-      <div class="form-group"><label>&#3619;&#3627;&#3633;&#3626;&#3612;&#3656;&#3634;&#3609;</label><input class="form-input" type="password" id="li-pw" placeholder="&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;"/></div>
-      <button class="auth-submit" onclick="doLogin()">&#3648;&#3586;&#3657;&#3634;&#3626;&#3641;&#3656;&#3619;&#3632;&#3610;&#3610;</button>
+    <form id="f-login" onsubmit="event.preventDefault(); doLogin()">
+      <div class="form-group"><label>&#3629;&#3637;&#3648;&#3617;&#3621;</label><input class="form-input" type="email" id="li-email" name="email" placeholder="you@email.com" autocomplete="username email"/></div>
+      <div class="form-group"><label>&#3619;&#3627;&#3633;&#3626;&#3612;&#3656;&#3634;&#3609;</label><input class="form-input" type="password" id="li-pw" name="password" placeholder="&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;" autocomplete="current-password"/></div>
+      <button class="auth-submit" type="submit">&#3648;&#3586;&#3657;&#3634;&#3626;&#3641;&#3656;&#3619;&#3632;&#3610;&#3610;</button>
       <div class="auth-link"><a onclick="showReset()">&#3621;&#3639;&#3617;&#3619;&#3627;&#3633;&#3626;&#3612;&#3656;&#3634;&#3609;?</a></div>
-    </div>
-    <div id="f-reg" style="display:none">
-      <div class="form-group"><label>&#3629;&#3637;&#3648;&#3617;&#3621;</label><input class="form-input" type="email" id="reg-email" placeholder="you@email.com"/></div>
-      <div class="form-group"><label>&#3619;&#3627;&#3633;&#3626;&#3612;&#3656;&#3634;&#3609;</label><input class="form-input" type="password" id="reg-pw" placeholder="&#3629;&#3618;&#3656;&#3634;&#3591;&#3609;&#3657;&#3629;&#3618; 6 &#3605;&#3633;&#3623;"/></div>
-      <button class="auth-submit" onclick="doReg()">&#3626;&#3617;&#3633;&#3588;&#3619;&#3626;&#3617;&#3634;&#3594;&#3636;&#3585;</button>
-    </div>
-    <div id="f-reset" style="display:none">
+    </form>
+    <form id="f-reg" style="display:none" onsubmit="event.preventDefault(); doReg()">
+      <div class="form-group"><label>&#3629;&#3637;&#3648;&#3617;&#3621;</label><input class="form-input" type="email" id="reg-email" name="email" placeholder="you@email.com" autocomplete="email"/></div>
+      <div class="form-group"><label>&#3619;&#3627;&#3633;&#3626;&#3612;&#3656;&#3634;&#3609;</label><input class="form-input" type="password" id="reg-pw" name="new-password" placeholder="&#3629;&#3618;&#3656;&#3634;&#3591;&#3609;&#3657;&#3629;&#3618; 6 &#3605;&#3633;&#3623;" autocomplete="new-password"/></div>
+      <button class="auth-submit" type="submit">&#3626;&#3617;&#3633;&#3588;&#3619;&#3626;&#3617;&#3634;&#3594;&#3636;&#3585;</button>
+    </form>
+    <form id="f-reset" style="display:none" onsubmit="event.preventDefault(); doReset()">
       <p style="font-size:13px;color:var(--muted);margin-bottom:16px">&#3585;&#3619;&#3629;&#3585;&#3629;&#3637;&#3648;&#3617;&#3621;&#3648;&#3614;&#3639;&#3656;&#3629;&#3619;&#3633;&#3610;&#3621;&#3636;&#3591;&#3585;&#3660;&#3619;&#3637;&#3648;&#3595;&#3655;&#3605;&#3619;&#3627;&#3633;&#3626;&#3612;&#3656;&#3634;&#3609;</p>
-      <div class="form-group"><label>&#3629;&#3637;&#3648;&#3617;&#3621;</label><input class="form-input" type="email" id="rs-email" placeholder="you@email.com"/></div>
-      <button class="auth-submit" onclick="doReset()">&#3626;&#3656;&#3591;&#3621;&#3636;&#3591;&#3585;&#3660;&#3619;&#3637;&#3648;&#3595;&#3655;&#3605;</button>
+      <div class="form-group"><label>&#3629;&#3637;&#3648;&#3617;&#3621;</label><input class="form-input" type="email" id="rs-email" name="email" placeholder="you@email.com" autocomplete="email"/></div>
+      <button class="auth-submit" type="submit">&#3626;&#3656;&#3591;&#3621;&#3636;&#3591;&#3585;&#3660;&#3619;&#3637;&#3648;&#3595;&#3655;&#3605;</button>
       <div class="auth-link"><a onclick="showLogin()">&#3585;&#3621;&#3633;&#3610;&#3652;&#3611;&#3648;&#3586;&#3657;&#3634;&#3626;&#3641;&#3656;&#3619;&#3632;&#3610;&#3610;</a></div>
-    </div>
+    </form>
+    <form id="f-recovery" style="display:none" onsubmit="event.preventDefault(); completePasswordReset()">
+      <p style="font-size:13px;color:var(--muted);margin-bottom:16px">ตั้งรหัสผ่านใหม่ของคุณ</p>
+      <div class="form-group"><label>รหัสผ่านใหม่</label><input class="form-input" type="password" id="rc-new" name="new-password" placeholder="อย่างน้อย 6 ตัวอักษร" autocomplete="new-password"/></div>
+      <div class="form-group"><label>ยืนยันรหัสผ่านใหม่</label><input class="form-input" type="password" id="rc-confirm" name="confirm-password" placeholder="กรอกให้ตรงกันอีกครั้ง" autocomplete="new-password"/></div>
+      <button class="auth-submit" type="submit">เปลี่ยนรหัสผ่าน</button>
+      <div class="auth-link"><a onclick="showLogin()">กลับหน้าเข้าสู่ระบบ</a></div>
+    </form>
   </div>
 </div>
 
@@ -211,6 +229,8 @@ nav{position:sticky;top:0;z-index:100;background:var(--bg);border-bottom:.5px so
       <div class="status-pill" id="payment-status-pill"><i class="ti ti-loader"></i><span>Pending</span></div>
       <div class="qr-box" id="payment-qr-box" style="display:none"><img id="payment-qr-image" alt="PromptPay QR"/></div>
       <div class="pay-note" id="payment-note"></div>
+      <div class="pay-success" id="payment-success" style="display:none"></div>
+      <button class="pay-confirm-btn" id="payment-success-btn" type="button" onclick="confirmPaymentSuccess()">ตกลง</button>
       <div class="pay-code" id="payment-code" style="display:none"></div>
       <div class="payment-frame-wrap" id="payment-frame-wrap" style="display:none">
         <div class="payment-frame-head">
@@ -228,11 +248,27 @@ nav{position:sticky;top:0;z-index:100;background:var(--bg);border-bottom:.5px so
   </div>
 </div>
 
+<div class="modal-overlay" id="admin-overlay" onclick="closeAdminOut(event)">
+  <div class="modal admin-modal">
+    <div class="modal-handle"></div>
+    <h2>ข้อมูลลูกค้า</h2>
+    <p class="admin-note">ตารางนี้ดึงจาก `orders` และ `payments` ล่าสุดเพื่อให้ดูชื่ออีเมล, ยอดชำระ, สถานะคำสั่งซื้อ และเลขอ้างอิงได้จากหลังบ้านเดียวกัน</p>
+    <div id="admin-list" class="admin-empty">Loading...</div>
+  </div>
+</div>
+
 <script>
 // ---- SUPABASE ----
 const SB_URL = window.AUTH_CONFIG?.supabaseUrl || 'https://piivygeapqvhjuppxhuy.supabase.co';
 const SB_KEY = window.AUTH_CONFIG?.supabaseAnonKey || 'sb_publishable_Mt7Of9hnsKpY8zczoTQtyg_zgGwqCyP';
-const sb = supabase.createClient(SB_URL, SB_KEY);
+const sb = supabase.createClient(SB_URL, SB_KEY, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true
+  }
+});
+const ADMIN_EMAILS = new Set((window.AUTH_CONFIG?.adminEmails || '').split(',').map(v=>v.trim().toLowerCase()).filter(Boolean));
 
 // ---- FONTS DATA ----
 const fonts = [
@@ -255,7 +291,9 @@ const fonts = [
 
 // ---- STATE ----
 let cart=[], inputCache={}, imgCache={}, currentUser=null, currentPayment=null, paymentPollTimer=null, paymentCompletedHandled=false;
+let paymentSuccessConfirmTimer=null;
 let ownedFontIds=new Set();
+let lastPaidCartSignature='';
 
 // ---- DEFAULT IMAGES from hidden HTML tags ----
 function getDefaultSrc(id) {
@@ -276,7 +314,10 @@ async function doLogin(){
   showMsg('','');
   const {error}=await sb.auth.signInWithPassword({email,password:pw});
   if(error) showMsg(error.message,'error');
-  else { showMsg('OK!','success'); setTimeout(closeAuth,800); }
+  else {
+    showMsg('OK!','success');
+    setTimeout(closeAuth,800);
+  }
 }
 async function doReg(){
   const email=document.getElementById('reg-email').value;
@@ -289,14 +330,48 @@ async function doReg(){
 async function doReset(){
   const email=document.getElementById('rs-email').value;
   showMsg('','');
-  const {error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:location.href});
+  const redirectTo=window.AUTH_CONFIG?.redirectTo || `${location.origin}${location.pathname}`;
+  const {error}=await sb.auth.resetPasswordForEmail(email,{redirectTo});
   if(error) showMsg(error.message,'error');
   else showMsg('Reset link sent! Check inbox','success');
 }
 async function doLogout(){ await sb.auth.signOut(); }
 
+function getRecoveryTokens(){
+  const hash=window.location.hash.replace(/^#/,'');
+  if(!hash) return null;
+  const params=new URLSearchParams(hash);
+  const type=params.get('type');
+  const accessToken=params.get('access_token');
+  const refreshToken=params.get('refresh_token');
+  if(type!=='recovery' || !accessToken || !refreshToken) return null;
+  return { accessToken, refreshToken };
+}
+
+async function completePasswordReset(){
+  const password=document.getElementById('rc-new').value;
+  const confirm=document.getElementById('rc-confirm').value;
+  if(password.length<6){ showMsg('Password must be at least 6 characters','error'); return; }
+  if(password!==confirm){ showMsg('Passwords do not match','error'); return; }
+  const tokens=getRecoveryTokens();
+  if(!tokens){ showMsg('Recovery link is invalid or expired','error'); return; }
+  const {error:sessionError}=await sb.auth.setSession({
+    access_token:tokens.accessToken,
+    refresh_token:tokens.refreshToken
+  });
+  if(sessionError){ showMsg(sessionError.message,'error'); return; }
+  const {error}=await sb.auth.updateUser({ password });
+  if(error){ showMsg(error.message,'error'); return; }
+  window.history.replaceState({},'',window.location.pathname);
+  showMsg('Password changed successfully','success');
+  setTimeout(()=>{ showLogin(); closeAuth(); },900);
+}
+
 function renderUserArea(){
   const el=document.getElementById('user-area');
+  const adminArea=document.getElementById('admin-area');
+  const canOpenAdmin=!!currentUser && (!ADMIN_EMAILS.size || ADMIN_EMAILS.has((currentUser.email||'').toLowerCase()));
+  adminArea.innerHTML=canOpenAdmin?'<button class="user-btn" onclick="openAdmin()"><i class="ti ti-layout-dashboard"></i> หลังบ้าน</button>':'';
   if(currentUser){
     el.innerHTML=`<div style="display:flex;align-items:center;gap:8px">
       <span class="user-badge"><i class="ti ti-user" style="font-size:12px;margin-right:4px"></i>${currentUser.email.split('@')[0]}</span>
@@ -314,13 +389,23 @@ function switchTab(t){
   document.getElementById('f-login').style.display=t==='login'?'block':'none';
   document.getElementById('f-reg').style.display=t==='reg'?'block':'none';
   document.getElementById('f-reset').style.display='none';
+  document.getElementById('f-recovery').style.display='none';
   document.getElementById('tab-login').className='auth-tab'+(t==='login'?' active':'');
   document.getElementById('tab-reg').className='auth-tab'+(t==='reg'?' active':'');
   showMsg('','');
 }
 function showReset(){ document.getElementById('f-login').style.display='none'; document.getElementById('f-reset').style.display='block'; }
-function showLogin(){ document.getElementById('f-reset').style.display='none'; document.getElementById('f-login').style.display='block'; }
+function showRecovery(){ switchTab('login'); document.getElementById('f-login').style.display='none'; document.getElementById('f-recovery').style.display='block'; }
+function showLogin(){ document.getElementById('f-reset').style.display='none'; document.getElementById('f-recovery').style.display='none'; document.getElementById('f-login').style.display='block'; }
 function showMsg(m,t){ const el=document.getElementById('auth-msg'); el.textContent=m; el.className='auth-msg'+(m?' '+t:''); }
+
+function openAuthFromUrlState(){
+  if(getRecoveryTokens()){
+    openAuth();
+    showRecovery();
+    showMsg('Please set your new password','success');
+  }
+}
 
 // ---- PURCHASES ----
 async function refreshOwnedFonts(){
@@ -457,6 +542,7 @@ function updatePreview(id,val){
   else ft.style.display='none';
 }
 function toggleCart(id){
+  if(ownedFontIds.has(id)){ openPurchases(); return; }
   const i=cart.findIndex(c=>c.id===id);
   if(i>-1) cart.splice(i,1); else cart.push(fonts.find(f=>f.id===id));
   render();
@@ -483,6 +569,10 @@ function closeOverlay(id){ document.getElementById(id).classList.remove('open');
 function checkout(){
   if(!cart.length){ openCart(); return; }
   if(!currentUser){ openAuth(); return; }
+  if(cart.every(f=>ownedFontIds.has(f.id))){
+    openPurchases();
+    return;
+  }
   const total=cart.reduce((s,f)=>s+f.price,0);
   resetPaymentUi();
   document.getElementById('pay-summary').innerHTML=
@@ -494,9 +584,13 @@ function setPaymentStatus(status,label){
   const pill=document.getElementById('payment-status-pill');
   pill.innerHTML=`<i class="ti ${status==='paid'?'ti-circle-check':status==='failed'?'ti-alert-circle':'ti-loader'}"></i><span>${label||status}</span>`;
 }
+function isPaidLikeStatus(status){
+  return ['paid','success','completed','successfully','settled'].includes((status||'').toLowerCase());
+}
 function resetPaymentUi(){
   currentPayment=null;
   paymentCompletedHandled=false;
+  if(paymentSuccessConfirmTimer){ clearTimeout(paymentSuccessConfirmTimer); paymentSuccessConfirmTimer=null; }
   if(paymentPollTimer){ clearInterval(paymentPollTimer); paymentPollTimer=null; }
   document.getElementById('payment-result').classList.remove('open');
   document.getElementById('payment-qr-box').style.display='none';
@@ -507,18 +601,26 @@ function resetPaymentUi(){
   document.getElementById('payment-frame-wrap').style.display='none';
   document.getElementById('payment-frame').src='about:blank';
   document.getElementById('payment-frame-note').style.display='none';
+  document.getElementById('payment-success').style.display='none';
+  document.getElementById('payment-success').textContent='';
+  document.getElementById('payment-success-btn').style.display='none';
   document.getElementById('payment-link').style.display='none';
   document.getElementById('payment-link').href='#';
+  const payBtn=document.getElementById('pay-btn');
+  payBtn.disabled=false;
+  payBtn.style.display='block';
+  payBtn.innerHTML='<i class="ti ti-credit-card" style="margin-right:6px"></i>&#3626;&#3619;&#3657;&#3634;&#3591; QR &#3614;&#3619;&#3657;&#3629;&#3617;&#3648;&#3614;&#3618;&#3660;';
   const debug=document.getElementById('payment-debug');
   debug.style.display='none';
   debug.textContent='';
   setPaymentStatus('pending','Pending');
 }
 function normalizePaymentResponse(data={}){
+  const normalized=(data.status||'pending').toLowerCase();
   return {
     paymentId:data.paymentId||data.providerPaymentId||data.id||null,
     orderId:data.orderId||null,
-    status:(data.status||'pending').toLowerCase(),
+    status:isPaidLikeStatus(normalized)?'paid':normalized,
     mode:data.mode||'live',
     qrCodeUrl:data.qrCodeUrl||data.qr_image_url||data.qrImageUrl||null,
     qrCodeText:data.qrCodeText||data.qrPayload||data.qr_code_text||null,
@@ -531,9 +633,14 @@ function normalizePaymentResponse(data={}){
 }
 function renderPaymentResult(raw){
   const data=normalizePaymentResponse(raw);
+  const hadPaidState = isPaidLikeStatus(currentPayment?.status) || paymentCompletedHandled;
+  const isPaid = isPaidLikeStatus(data.status);
+  if(isPaid) paymentCompletedHandled=true;
   currentPayment=data;
   const result=document.getElementById('payment-result');
   const noteEl=document.getElementById('payment-note');
+  const successEl=document.getElementById('payment-success');
+  const successBtn=document.getElementById('payment-success-btn');
   const code=document.getElementById('payment-code');
   const frameWrap=document.getElementById('payment-frame-wrap');
   const frame=document.getElementById('payment-frame');
@@ -550,6 +657,25 @@ function renderPaymentResult(raw){
   noteEl.textContent=data.note || (data.mode==='mock'
     ? 'Mock mode active. When you add real GB Prime Pay credentials and deploy the edge function, this box will show the real PromptPay QR.'
     : 'Scan the PromptPay QR or continue to the payment page. We will update the order status automatically after payment.');
+  if(isPaid || hadPaidState){
+    if(paymentSuccessConfirmTimer){ clearTimeout(paymentSuccessConfirmTimer); paymentSuccessConfirmTimer=null; }
+    successEl.style.display='block';
+    successEl.textContent='ชำระเงินสำเร็จแล้ว เรียบร้อย! คลิกไปดูไฟล์ที่ครอบครองจากเมนู “สินค้าของฉัน” ได้เลย';
+    successBtn.style.display='none';
+    const payBtn=document.getElementById('pay-btn');
+    payBtn.disabled=true;
+    payBtn.style.display='none';
+    paymentSuccessConfirmTimer=setTimeout(()=>{ 
+      if(currentPayment && isPaidLikeStatus(currentPayment.status)){ 
+        successBtn.style.display='inline-block';
+      }
+    }, 1000);
+  }else{
+    successEl.style.display='none';
+    successEl.textContent='';
+    successBtn.style.display='none';
+    if(paymentSuccessConfirmTimer){ clearTimeout(paymentSuccessConfirmTimer); paymentSuccessConfirmTimer=null; }
+  }
   if(data.qrCodeUrl){
     document.getElementById('payment-qr-image').src=data.qrCodeUrl;
     document.getElementById('payment-qr-box').style.display='flex';
@@ -591,6 +717,12 @@ function renderPaymentResult(raw){
 async function handlePaidPayment(){
   if(paymentCompletedHandled) return;
   paymentCompletedHandled=true;
+  lastPaidCartSignature=cart.map(f=>f.id).sort((a,b)=>a-b).join(',');
+  if(paymentSuccessConfirmTimer){ clearTimeout(paymentSuccessConfirmTimer); paymentSuccessConfirmTimer=null; }
+  await refreshOwnedFonts();
+}
+async function confirmPaymentSuccess(){
+  if(paymentSuccessConfirmTimer){ clearTimeout(paymentSuccessConfirmTimer); paymentSuccessConfirmTimer=null; }
   cart=[];
   await refreshOwnedFonts();
   document.getElementById('pay-modal').classList.remove('open');
@@ -605,8 +737,8 @@ async function pollPaymentStatus(orderId){
       if(!data) return;
       const normalized=normalizePaymentResponse(data);
       if(currentPayment && normalized.status!==currentPayment.status) renderPaymentResult({...currentPayment,...normalized});
-      if(normalized.status==='paid'){ await handlePaidPayment(); }
-      if(normalized.status==='paid' || normalized.status==='failed'){
+      if(isPaidLikeStatus(normalized.status)){ await handlePaidPayment(); }
+      if(isPaidLikeStatus(normalized.status) || normalized.status==='failed'){
         clearInterval(paymentPollTimer);
         paymentPollTimer=null;
       }
@@ -614,6 +746,11 @@ async function pollPaymentStatus(orderId){
   },5000);
 }
 async function doPayment(){
+  const cartSignature=cart.map(f=>f.id).sort((a,b)=>a-b).join(',');
+  if(lastPaidCartSignature && cartSignature===lastPaidCartSignature){
+    openPurchases();
+    return;
+  }
   const btn=document.getElementById('pay-btn');
   btn.disabled=true;
   btn.innerHTML='<span class="spinner"></span>Creating QR...';
@@ -645,7 +782,49 @@ async function doPayment(){
 function closePay(){ resetPaymentUi(); document.getElementById('pay-modal').classList.remove('open'); }
 function closePayOut(e){ if(e.target===document.getElementById('pay-modal')) closePay(); }
 
+function closeAdminOut(e){ if(e.target===document.getElementById('admin-overlay')) closeOverlay('admin-overlay'); }
+
+function adminCell(value, klass=''){
+  return `<td${klass?` class="${klass}"`:''}>${value||'-'}</td>`;
+}
+
+function adminFontSummary(fontIds){
+  if(!Array.isArray(fontIds) || !fontIds.length) return '-';
+  return fontIds.map(id=>fonts.find(font=>font.id===id)?.name || `#${id}`).join(', ');
+}
+
+async function openAdmin(){
+  document.getElementById('admin-overlay').classList.add('open');
+  const list=document.getElementById('admin-list');
+  list.textContent='Loading...';
+  const {data,error}=await sb.functions.invoke('admin-overview');
+  if(error || !data?.rows){ list.innerHTML=`<div class="admin-empty">โหลดข้อมูลลูกค้าไม่สำเร็จ${error?.message?`<br><small>${error.message}</small>`:''}</div>`; return; }
+  if(!data.rows.length){ list.innerHTML='<div class="admin-empty">ยังไม่มีข้อมูลลูกค้า</div>'; return; }
+  list.innerHTML=`<div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>เวลา</th><th>อีเมล</th><th>ฟอนต์</th><th>Order</th><th>Order Status</th><th>Payment Status</th><th>Amount</th><th>Payment ID</th><th>Reference</th></tr></thead><tbody>${
+    data.rows.map(row=>`<tr>${
+      adminCell(new Date(row.updated_at||row.created_at||Date.now()).toLocaleString('th-TH'))
+    }${
+      adminCell(row.customer_email)
+    }${
+      adminCell(adminFontSummary(row.font_ids))
+    }${
+      adminCell(row.order_id,'mono')
+    }${
+      adminCell(row.order_status)
+    }${
+      adminCell(row.payment_status)
+    }${
+      adminCell(row.amount,'mono')
+    }${
+      adminCell(row.provider_payment_id,'mono')
+    }${
+      adminCell(row.reference_no,'mono')
+    }</tr>`).join('')
+  }</tbody></table></div>`;
+}
+
 render();
+openAuthFromUrlState();
 </script>
 </body>
 </html>
