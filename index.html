@@ -119,6 +119,11 @@ nav{position:sticky;top:0;z-index:100;background:var(--bg);border-bottom:.5px so
 .pay-note{font-size:12px;line-height:1.55;color:var(--muted)}
 .pay-code{margin-top:10px;padding:10px 12px;border-radius:12px;background:var(--bg);border:.5px solid var(--border);font-size:12px;word-break:break-all}
 .pay-link{display:inline-flex;align-items:center;gap:6px;margin-top:12px;font-size:13px;color:var(--text)}
+.payment-frame-wrap{margin-top:12px;border:1px solid var(--border);border-radius:18px;background:#fff;overflow:hidden;box-shadow:0 12px 30px rgba(0,0,0,.08)}
+.payment-frame-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border-bottom:1px solid var(--border);font-size:12px;color:var(--muted);background:#fafafa}
+.payment-frame-head strong{color:var(--text);font-size:13px}
+.payment-frame{width:100%;height:min(58vh,620px);border:0;background:#fff;display:block}
+.pay-fallback{font-size:12px;color:var(--muted);line-height:1.45;margin-top:8px}
 .pay-debug{margin-top:10px;padding:10px;border-radius:12px;background:#f8fafc;border:1px solid var(--border);font-size:11px;color:var(--muted);white-space:pre-wrap;word-break:break-all}
 .pay-btn{width:100%;padding:13px;background:var(--text);color:var(--bg);border:none;border-radius:999px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;transition:opacity .15s}
 .pay-btn:hover{opacity:.8}
@@ -207,6 +212,14 @@ nav{position:sticky;top:0;z-index:100;background:var(--bg);border-bottom:.5px so
       <div class="qr-box" id="payment-qr-box" style="display:none"><img id="payment-qr-image" alt="PromptPay QR"/></div>
       <div class="pay-note" id="payment-note"></div>
       <div class="pay-code" id="payment-code" style="display:none"></div>
+      <div class="payment-frame-wrap" id="payment-frame-wrap" style="display:none">
+        <div class="payment-frame-head">
+          <strong>&#3627;&#3609;&#3657;&#3634;&#3594;&#3635;&#3619;&#3632;&#3648;&#3591;&#3636;&#3609; GBPay</strong>
+          <span>&#3592;&#3656;&#3634;&#3618;&#3651;&#3609;&#3627;&#3609;&#3657;&#3634;&#3609;&#3637;&#3657;&#3652;&#3604;&#3657;&#3648;&#3621;&#3618;</span>
+        </div>
+        <iframe class="payment-frame" id="payment-frame" title="GBPay payment page" loading="lazy"></iframe>
+      </div>
+      <div class="pay-fallback" id="payment-frame-note" style="display:none">&#3606;&#3657;&#3634;&#3585;&#3619;&#3629;&#3610;&#3594;&#3635;&#3619;&#3632;&#3648;&#3591;&#3636;&#3609;&#3652;&#3617;&#3656;&#3649;&#3626;&#3604;&#3591; &#3651;&#3627;&#3657;&#3585;&#3604;&#3648;&#3611;&#3636;&#3604;&#3627;&#3609;&#3657;&#3634;&#3594;&#3635;&#3619;&#3632;&#3648;&#3591;&#3636;&#3609;&#3649;&#3618;&#3585;&#3604;&#3657;&#3634;&#3609;&#3621;&#3656;&#3634;&#3591;</div>
       <pre class="pay-debug" id="payment-debug" style="display:none;"></pre>
       <a class="pay-link" id="payment-link" href="#" target="_blank" rel="noopener" style="display:none"><i class="ti ti-external-link"></i><span>Open payment page</span></a>
     </div>
@@ -491,6 +504,9 @@ function resetPaymentUi(){
   document.getElementById('payment-note').textContent='';
   document.getElementById('payment-code').style.display='none';
   document.getElementById('payment-code').textContent='';
+  document.getElementById('payment-frame-wrap').style.display='none';
+  document.getElementById('payment-frame').src='about:blank';
+  document.getElementById('payment-frame-note').style.display='none';
   document.getElementById('payment-link').style.display='none';
   document.getElementById('payment-link').href='#';
   const debug=document.getElementById('payment-debug');
@@ -519,6 +535,9 @@ function renderPaymentResult(raw){
   const result=document.getElementById('payment-result');
   const noteEl=document.getElementById('payment-note');
   const code=document.getElementById('payment-code');
+  const frameWrap=document.getElementById('payment-frame-wrap');
+  const frame=document.getElementById('payment-frame');
+  const frameNote=document.getElementById('payment-frame-note');
   const link=document.getElementById('payment-link');
   const debug=document.getElementById('payment-debug');
   setPaymentStatus(
@@ -544,12 +563,19 @@ function renderPaymentResult(raw){
     code.style.display='none';
   }
   if(data.paymentUrl){
+    frame.src=data.paymentUrl;
+    frameWrap.style.display='block';
+    frameNote.style.display='block';
     link.href=data.paymentUrl;
+    link.querySelector('span').textContent='เปิดหน้าชำระเงินแยก';
     link.style.display='inline-flex';
   }else{
+    frameWrap.style.display='none';
+    frame.src='about:blank';
+    frameNote.style.display='none';
     link.style.display='none';
   }
-  if(data.callbackUrl || data.backgroundUrl){
+  if((data.callbackUrl || data.backgroundUrl) && new URLSearchParams(location.search).has('debug')){
     debug.style.display='block';
     debug.textContent=JSON.stringify({
       callbackUrl: data.callbackUrl,
