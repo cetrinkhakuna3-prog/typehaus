@@ -192,6 +192,7 @@ nav{position:sticky;top:0;z-index:100;background:var(--bg);border-bottom:.5px so
 .pay-success{margin-top:10px;padding:10px 12px;border-radius:12px;background:#ecfdf5;border:1px solid #bbf7d0;color:#065f46;font-size:12px;line-height:1.5}
 .pay-confirm-btn{display:none;margin-top:10px;border:0;border-radius:999px;padding:9px 14px;background:#065f46;color:#fff;font-size:12px;cursor:pointer;font-family:inherit;font-weight:600}
 .pay-link{display:inline-flex;align-items:center;gap:6px;margin-top:12px;font-size:13px;color:var(--text)}
+.pay-link.payment-cta{width:100%;justify-content:center;text-decoration:none;border:.5px solid var(--border2);border-radius:999px;padding:11px 14px;background:var(--text);color:var(--bg);font-weight:600}
 .payment-frame-wrap{margin-top:12px;border:1px solid var(--border);border-radius:18px;background:#fff;overflow:hidden;box-shadow:0 12px 30px rgba(0,0,0,.08)}
 .payment-frame-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border-bottom:1px solid var(--border);font-size:12px;color:var(--muted);background:#fafafa}
 .payment-frame-head strong{color:var(--text);font-size:13px}
@@ -203,6 +204,12 @@ nav{position:sticky;top:0;z-index:100;background:var(--bg);border-bottom:.5px so
 .pay-btn:disabled{opacity:.4;cursor:not-allowed}
 .admin-modal{max-width:960px}
 .admin-table-wrap{overflow:auto;border:.5px solid var(--border);border-radius:14px}
+@media(max-width:720px){
+  .auth-modal{align-items:flex-start;overflow-y:auto;padding:10px 10px calc(96px + env(safe-area-inset-bottom))}
+  .pay-box{width:100%;max-width:none;margin:8px 0 120px;padding:20px 16px;border-radius:18px}
+  .payment-frame-wrap{display:none!important}
+  .pay-link.payment-cta{display:flex!important}
+}
 .admin-table{width:100%;min-width:760px;border-collapse:collapse;font-size:12px}
 .admin-table th,.admin-table td{padding:10px 12px;border-bottom:.5px solid var(--border);text-align:left;vertical-align:top}
 .admin-table th{background:var(--bg2);font-weight:600}
@@ -876,6 +883,7 @@ function resetPaymentUi(){
   document.getElementById('payment-qr-box').style.display='none';
   document.getElementById('payment-qr-image').src='';
   document.getElementById('payment-qr-save').style.display='none';
+  document.getElementById('payment-qr-save').innerHTML='<i class="ti ti-download" style="font-size:14px"></i>บันทึก QR Code';
   document.getElementById('payment-note').textContent='';
   document.getElementById('payment-code').style.display='none';
   document.getElementById('payment-code').textContent='';
@@ -914,6 +922,7 @@ function normalizePaymentResponse(data={}){
 }
 function renderPaymentResult(raw){
   const data=normalizePaymentResponse(raw);
+  const isMobilePayment=window.matchMedia('(max-width: 720px)').matches;
   const hadPaidState = isPaidLikeStatus(currentPayment?.status) || paymentCompletedHandled;
   const isPaid = isPaidLikeStatus(data.status);
   if(isPaid) paymentCompletedHandled=true;
@@ -961,9 +970,15 @@ function renderPaymentResult(raw){
     document.getElementById('payment-qr-image').src=data.qrCodeUrl;
     document.getElementById('payment-qr-box').style.display='flex';
     document.getElementById('payment-qr-save').style.display='flex';
+    document.getElementById('payment-qr-save').innerHTML='<i class="ti ti-download" style="font-size:14px"></i>บันทึก QR Code';
   }else{
     document.getElementById('payment-qr-box').style.display='none';
-    document.getElementById('payment-qr-save').style.display='none';
+    if(data.paymentUrl){
+      document.getElementById('payment-qr-save').style.display='flex';
+      document.getElementById('payment-qr-save').innerHTML='<i class="ti ti-external-link" style="font-size:14px"></i>เปิด QR เพื่อบันทึก';
+    }else{
+      document.getElementById('payment-qr-save').style.display='none';
+    }
   }
   if(data.qrCodeText){
     code.textContent=data.qrCodeText;
@@ -972,16 +987,26 @@ function renderPaymentResult(raw){
     code.style.display='none';
   }
   if(data.paymentUrl){
-    frame.src=data.paymentUrl;
-    frameWrap.style.display='block';
-    frameNote.style.display='block';
+    if(isMobilePayment){
+      frame.src='about:blank';
+      frameWrap.style.display='none';
+      frameNote.textContent='บนมือถือให้กดเปิดหน้า QR เต็มจอ เพื่อเลื่อนและบันทึก QR ได้ไม่โดนครอป';
+      frameNote.style.display='block';
+    }else{
+      frame.src=data.paymentUrl;
+      frameWrap.style.display='block';
+      frameNote.textContent='ถ้ากรอบชำระเงินไม่แสดง ให้กดเปิดหน้าชำระเงินแยกด้านล่าง';
+      frameNote.style.display='block';
+    }
     link.href=data.paymentUrl;
-    link.querySelector('span').textContent='เปิดหน้าชำระเงินแยก';
+    link.classList.add('payment-cta');
+    link.querySelector('span').textContent=isMobilePayment?'เปิดหน้า QR เต็มจอ':'เปิดหน้าชำระเงินแยก';
     link.style.display='inline-flex';
   }else{
     frameWrap.style.display='none';
     frame.src='about:blank';
     frameNote.style.display='none';
+    link.classList.remove('payment-cta');
     link.style.display='none';
   }
   if((data.callbackUrl || data.backgroundUrl) && new URLSearchParams(location.search).has('debug')){
@@ -1000,6 +1025,10 @@ function renderPaymentResult(raw){
 async function downloadQRCode(){
   const img=document.getElementById('payment-qr-image');
   const src=img?.src||currentPayment?.qrCodeUrl;
+  if(!currentPayment?.qrCodeUrl && currentPayment?.paymentUrl){
+    window.open(currentPayment.paymentUrl,'_blank','noopener');
+    return;
+  }
   if(!src){ return; }
   const filename=`typehaus-qr-${currentPayment?.orderId||Date.now()}.png`;
   try{
