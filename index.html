@@ -108,13 +108,13 @@ nav{position:sticky;top:0;z-index:100;background:var(--bg);border-bottom:.5px so
 .add-btn{background:var(--text);color:var(--bg);border:none;border-radius:999px;padding:8px 18px;font-size:13px;cursor:pointer;white-space:nowrap;font-family:inherit;font-weight:500;display:flex;align-items:center;gap:5px;transition:opacity .15s}
 .add-btn:hover{opacity:.75}
 .add-btn.added{background:none;color:var(--text);border:.5px solid var(--border2)}
-.license-picker{display:flex;flex-direction:column;gap:7px}
-.license-title{font-size:11px;color:var(--muted);font-weight:600}
-.license-options{display:grid;grid-template-columns:1fr;gap:6px}
+.license-modal-title{font-size:12px;color:var(--muted);margin-bottom:6px}
+.license-modal-name{font-size:16px;font-weight:600;margin-bottom:14px}
+.license-options{display:grid;grid-template-columns:1fr;gap:8px}
 .license-option{border:.5px solid var(--border);background:var(--bg2);color:var(--muted);border-radius:9px;padding:8px 10px;font-size:12px;font-family:inherit;text-align:left;cursor:pointer;transition:border-color .15s,background .15s,color .15s}
 .license-option.active{border-color:var(--border2);background:var(--text);color:var(--bg)}
-.license-warning{display:none;font-size:11px;color:#b45309}
-.license-warning.show{display:block}
+.license-option strong{display:block;color:inherit;font-size:13px;margin-bottom:2px}
+.license-option span{display:block;font-size:11px;opacity:.75}
 .bottom-bar{position:fixed;bottom:0;left:0;right:0;background:var(--bg);border-top:.5px solid var(--border);padding:12px 20px 16px;display:flex;gap:10px;z-index:200}
 .bar-btn{flex:1;padding:12px;border-radius:999px;font-size:14px;font-family:inherit;cursor:pointer;font-weight:500;display:flex;align-items:center;justify-content:center;gap:7px;transition:opacity .15s,background .15s}
 .bar-btn.primary{background:var(--text);color:var(--bg);border:none}
@@ -295,6 +295,15 @@ function collapseFontDetails(){
   <div class="modal"><div class="modal-handle"></div><h2>&#3605;&#3632;&#3585;&#3619;&#3657;&#3634;&#3626;&#3636;&#3609;&#3588;&#3657;&#3634;</h2><div id="cart-items"></div></div>
 </div>
 
+<div class="modal-overlay" id="license-overlay" onclick="closeLicenseOut(event)">
+  <div class="modal license-modal">
+    <div class="modal-handle"></div>
+    <div class="license-modal-title">เลือกรูปแบบลิขสิทธิ์</div>
+    <div class="license-modal-name" id="license-modal-name"></div>
+    <div class="license-options" id="license-options"></div>
+  </div>
+</div>
+
 <div class="auth-modal" id="auth-modal" onclick="closeAuthOut(event)">
   <div class="auth-box">
     <button class="auth-close" onclick="closeAuth()"><i class="ti ti-x"></i></button>
@@ -406,9 +415,9 @@ const fonts = [
   {id:6, name:'Syne Extra', style:'Display - Bold - Modern',  price:1, tag:'ELEGANT',    family:'"Syne",sans-serif', files:[]},
 ];
 const LICENSE_OPTIONS = [
-  {key:'personal', label:'ส่วนตัว'},
-  {key:'commercial-person', label:'เชิงพาณิชย์บุคคล'},
-  {key:'commercial-company', label:'เชิงพาณิชย์บริษัท'}
+  {key:'personal', label:'ส่วนตัว', detail:'ใช้เอง ไม่ใช้ในงานรับจ้างหรืองานแบรนด์'},
+  {key:'commercial-person', label:'เชิงพาณิชย์บุคคล', detail:'ใช้กับงานขาย งานคอนเทนต์ หรืองานลูกค้ารายบุคคล'},
+  {key:'commercial-company', label:'เชิงพาณิชย์บริษัท', detail:'ใช้ในนามบริษัท ทีม แบรนด์ หรือองค์กร'}
 ];
 
 // ---- STATE ----
@@ -417,6 +426,7 @@ let paymentSuccessConfirmTimer=null;
 let ownedFontIds=new Set();
 let lastPaidCartSignature='';
 let selectedLicenses={};
+let pendingLicenseFontId=null;
 let previewFocusTimers={};
 let activePreviewFocusId=null;
 let lastPreviewFocusAt=0;
@@ -616,7 +626,8 @@ function render(){
     const owned=ownedFontIds.has(f.id);
     const selectedLicense=selectedLicenses[f.id]||'';
     const cartItem=cart.find(c=>c.id===f.id);
-    const licenseOptions=LICENSE_OPTIONS.map(license=>`<button class="license-option ${selectedLicense===license.key?'active':''}" type="button" onclick="selectLicense(${f.id},'${license.key}')">${license.label}</button>`).join('');
+    const selectedLicenseLabel=getLicense(selectedLicense)?.label||'เลือกรูปแบบ';
+    const actionLabel=cartItem?'<i class="ti ti-check" style="font-size:14px"></i> Added':selectedLicense?'<i class="ti ti-plus" style="font-size:14px"></i> Add':'<i class="ti ti-license" style="font-size:14px"></i> เลือกรูปแบบ';
     const links=owned
       ? (f.files||[]).map(file=>`<a class="font-file-link" href="./assets/fonts/${file}" download><i class="ti ti-download"></i><span>${file}</span></a>`).join('')
       : '';
@@ -640,15 +651,10 @@ function render(){
           <div class="font-file-links">${links || empty}</div>
         </div>
         <input class="type-input" id="ti-${f.id}" style="font-family:${f.family}" placeholder="Type to preview font on image..." onfocus="focusPreview(${f.id})" oninput="updatePreview(${f.id},this.value)"/>
-        <div class="license-picker">
-          <div class="license-title">เลือกรูปแบบก่อนเพิ่มลงตะกร้า</div>
-          <div class="license-options">${licenseOptions}</div>
-          <div class="license-warning" id="lw-${f.id}">กรุณาเลือกรูปแบบลิขสิทธิ์ก่อน</div>
-        </div>
         <div class="card-footer">
-          <div><div class="price">&#3647;${f.price.toLocaleString()}</div><span class="price-sub">Lifetime license</span></div>
+          <div><div class="price">&#3647;${f.price.toLocaleString()}</div><span class="price-sub">${cartItem?cartItem.licenseLabel:selectedLicenseLabel}</span></div>
           <button class="add-btn ${cartItem?'added':''}" id="ab-${f.id}" onclick="toggleCart(${f.id})">
-            ${cartItem?'<i class="ti ti-check" style="font-size:14px"></i> Added':'<i class="ti ti-plus" style="font-size:14px"></i> Add'}
+            ${actionLabel}
           </button>
         </div>
       </div>
@@ -711,7 +717,25 @@ function focusPreview(id){
 function getLicense(key){
   return LICENSE_OPTIONS.find(license=>license.key===key)||null;
 }
-function selectLicense(id,key){
+function openLicensePicker(id){
+  pendingLicenseFontId=id;
+  const font=fonts.find(f=>f.id===id);
+  const nameEl=document.getElementById('license-modal-name');
+  const optionsEl=document.getElementById('license-options');
+  if(nameEl) nameEl.textContent=font?.name||'';
+  if(optionsEl){
+    optionsEl.innerHTML=LICENSE_OPTIONS.map(license=>`<button class="license-option ${selectedLicenses[id]===license.key?'active':''}" type="button" onclick="selectLicense(${id},'${license.key}',true)"><strong>${license.label}</strong><span>${license.detail}</span></button>`).join('');
+  }
+  document.getElementById('license-overlay').classList.add('open');
+}
+function closeLicensePicker(){
+  document.getElementById('license-overlay').classList.remove('open');
+  pendingLicenseFontId=null;
+}
+function closeLicenseOut(e){
+  if(e.target===document.getElementById('license-overlay')) closeLicensePicker();
+}
+function selectLicense(id,key,closeAfter=false){
   selectedLicenses[id]=key;
   const cartItem=cart.find(c=>c.id===id);
   const license=getLicense(key);
@@ -719,14 +743,14 @@ function selectLicense(id,key){
     cartItem.licenseKey=license.key;
     cartItem.licenseLabel=license.label;
   }
+  if(closeAfter) closeLicensePicker();
   render();
 }
 function toggleCart(id){
   if(ownedFontIds.has(id)){ openPurchases(); return; }
   const license=getLicense(selectedLicenses[id]);
   if(!license){
-    const warning=document.getElementById('lw-'+id);
-    if(warning) warning.classList.add('show');
+    openLicensePicker(id);
     return;
   }
   const i=cart.findIndex(c=>c.id===id);
