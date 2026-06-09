@@ -377,59 +377,63 @@ async function doPayment(){
     }).select().single();
     if(error) throw error;
 
-    // 2. สร้าง GB Link Payment URL
-    const GB_PUBLIC_KEY = 'tgWPPB93f0vLdozCSAl1BRqFlpbCTn0S';
+    // 2. เรียก Edge Function เพื่อสร้าง GBPay QR
     const refNo = order.id.replace(/-/g,'').substring(0,20);
-    const detail = 'TYPEHAUS: ' + cart.map(f=>f.name).join(', ');
-    const customerName = currentUser.email.split('@')[0];
-    const returnURL = 'https://cetrinkhakuna3-prog.github.io/typehaus/?payment=success&order=' + order.id;
+    const {data:{session}} = await sb.auth.getSession();
 
-    // สร้าง form แล้ว submit ไปหน้า GBPay โดยตรง
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.action = 'https://api.gbprimepay.com/gbp/gateway/payment';
-    form.target = '_blank';
-    form.style.display = 'none';
-
-    const fields = {
-      publicKey: GB_PUBLIC_KEY,
-      amount: total.toFixed(2),
-      referenceNo: refNo,
-      detail: detail,
-      customerName: customerName,
-      customerEmail: currentUser.email,
-      merchantDefined1: order.id,
-      backgroundUrl: 'https://cetrinkhakuna3-prog.github.io/typehaus/?payment=success',
-      responseUrl: returnURL,
-    };
-
-    Object.entries(fields).forEach(([k,v]) => {
-      const inp = document.createElement('input');
-      inp.type = 'hidden';
-      inp.name = k;
-      inp.value = v;
-      form.appendChild(inp);
+    const res = await fetch('https://piivygeapqvhjuppxhuy.supabase.co/functions/v1/gbpay-payment', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + session.access_token,
+      },
+      body: JSON.stringify({
+        amount: total.toFixed(2),
+        referenceNo: refNo,
+        detail: 'TYPEHAUS: ' + cart.map(f=>f.name).join(', '),
+        customerName: currentUser.email.split('@')[0],
+        customerEmail: currentUser.email,
+        orderId: order.id,
+      })
     });
 
-    document.body.appendChild(form);
-    form.submit();
-    document.body.removeChild(form);
+    const gbData = await res.json();
 
-    // อัปเดต order status
-    await sb.from('orders').update({
-      xendit_invoice_id: refNo,
-      status: 'awaiting_payment'
-    }).eq('id', order.id);
+    if (gbData && gbData.gbpReferenceNo) {
+      await sb.from('orders').update({
+        xendit_invoice_id: gbData.gbpReferenceNo,
+        status: 'awaiting_payment'
+      }).eq('id', order.id);
 
-    closePay();
-    cart = [];
-    render();
+      // แสดง QR Code
+      showQR(gbData.qrImage || gbData.qrCode, total, gbData.gbpReferenceNo);
+      closePay();
+      cart = [];
+      render();
+    } else {
+      throw new Error(gbData.resultMessage || gbData.message || 'GBPay error: ' + JSON.stringify(gbData));
+    }
 
   }catch(e){
     alert('Error: '+e.message);
   }
   btn.disabled=false;
   btn.innerHTML='<i class="ti ti-credit-card" style="margin-right:6px"></i>&#3594;&#3635;&#3619;&#3632;&#3648;&#3591;&#3636;&#3609;&#3648;&#3621;&#3618;';
+}
+function showQR(qrData, total, ref){
+  const existing = document.getElementById('qr-modal');
+  if(existing) existing.remove();
+  const modal = document.createElement('div');
+  modal.id = 'qr-modal';
+  modal.style.cssText='position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:20px';
+  modal.innerHTML=`<div style="background:var(--bg);border-radius:20px;padding:28px 24px;width:100%;max-width:360px;text-align:center">
+    <div style="font-size:16px;font-weight:600;margin-bottom:4px">&#3626;&#3588;&#3634;&#3609; QR PromptPay</div>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:20px">&#3618;&#3629;&#3604;&#3594;&#3635;&#3619;&#3632;: &#3647;${total.toLocaleString()}</div>
+    <img src="data:image/png;base64,${qrData}" style="width:220px;height:220px;border-radius:12px" alt="QR Code"/>
+    <div style="font-size:11px;color:var(--hint);margin-top:12px">Ref: ${ref}</div>
+    <button onclick="document.getElementById('qr-modal').remove()" style="margin-top:18px;width:100%;padding:11px;background:var(--text);color:var(--bg);border:none;border-radius:999px;font-size:14px;cursor:pointer;font-family:inherit">&#3611;&#3636;&#3604;</button>
+  </div>`;
+  document.body.appendChild(modal);
 }
 function closePay(){ document.getElementById('pay-modal').classList.remove('open'); const btn=document.getElementById('pay-btn'); if(btn){ btn.disabled=false; btn.innerHTML='<i class="ti ti-credit-card" style="margin-right:6px"></i>Pay Now'; } }
 function closePayOut(e){ if(e.target===document.getElementById('pay-modal')) closePay(); }
