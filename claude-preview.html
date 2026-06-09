@@ -183,8 +183,10 @@ nav{position:sticky;top:0;z-index:100;background:var(--bg);border-bottom:.5px so
 .payment-result{display:none;background:var(--bg2);border-radius:var(--rl);padding:16px;margin-bottom:16px}
 .payment-result.open{display:block}
 .status-pill{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:999px;font-size:12px;font-weight:600;background:rgba(0,0,0,.06);color:var(--text);margin-bottom:12px}
-.qr-box{display:flex;justify-content:center;align-items:center;background:var(--bg);border:.5px solid var(--border);border-radius:16px;padding:14px;margin:12px 0}
-.qr-box img{width:min(100%,240px);height:auto;display:block}
+.qr-box{display:flex;justify-content:center;align-items:center;background:var(--bg);border:.5px solid var(--border);border-radius:16px;padding:14px;margin:12px auto;width:min(100%,276px);aspect-ratio:1/1}
+.qr-box img{width:100%;height:100%;max-width:248px;max-height:248px;display:block;object-fit:contain}
+.qr-save-btn{display:none;width:100%;margin:2px 0 12px;border:.5px solid var(--border2);background:var(--bg);color:var(--text);border-radius:999px;padding:10px 14px;font-size:13px;font-family:inherit;font-weight:500;cursor:pointer;align-items:center;justify-content:center;gap:7px;transition:background .15s,opacity .15s}
+.qr-save-btn:hover{background:var(--bg2)}
 .pay-note{font-size:12px;line-height:1.55;color:var(--muted)}
 .pay-code{margin-top:10px;padding:10px 12px;border-radius:12px;background:var(--bg);border:.5px solid var(--border);font-size:12px;word-break:break-all}
 .pay-success{margin-top:10px;padding:10px 12px;border-radius:12px;background:#ecfdf5;border:1px solid #bbf7d0;color:#065f46;font-size:12px;line-height:1.5}
@@ -369,6 +371,7 @@ function collapseFontDetails(){
     <div class="payment-result" id="payment-result">
       <div class="status-pill" id="payment-status-pill"><i class="ti ti-loader"></i><span>Pending</span></div>
       <div class="qr-box" id="payment-qr-box" style="display:none"><img id="payment-qr-image" alt="PromptPay QR"/></div>
+      <button class="qr-save-btn" id="payment-qr-save" type="button" onclick="downloadQRCode()"><i class="ti ti-download" style="font-size:14px"></i>บันทึก QR Code</button>
       <div class="pay-note" id="payment-note"></div>
       <div class="pay-success" id="payment-success" style="display:none"></div>
       <button class="pay-confirm-btn" id="payment-success-btn" type="button" onclick="confirmPaymentSuccess()">ตกลง</button>
@@ -872,6 +875,7 @@ function resetPaymentUi(){
   document.getElementById('payment-result').classList.remove('open');
   document.getElementById('payment-qr-box').style.display='none';
   document.getElementById('payment-qr-image').src='';
+  document.getElementById('payment-qr-save').style.display='none';
   document.getElementById('payment-note').textContent='';
   document.getElementById('payment-code').style.display='none';
   document.getElementById('payment-code').textContent='';
@@ -956,8 +960,10 @@ function renderPaymentResult(raw){
   if(data.qrCodeUrl){
     document.getElementById('payment-qr-image').src=data.qrCodeUrl;
     document.getElementById('payment-qr-box').style.display='flex';
+    document.getElementById('payment-qr-save').style.display='flex';
   }else{
     document.getElementById('payment-qr-box').style.display='none';
+    document.getElementById('payment-qr-save').style.display='none';
   }
   if(data.qrCodeText){
     code.textContent=data.qrCodeText;
@@ -990,6 +996,34 @@ function renderPaymentResult(raw){
     debug.textContent='';
   }
   result.classList.add('open');
+}
+async function downloadQRCode(){
+  const img=document.getElementById('payment-qr-image');
+  const src=img?.src||currentPayment?.qrCodeUrl;
+  if(!src){ return; }
+  const filename=`typehaus-qr-${currentPayment?.orderId||Date.now()}.png`;
+  try{
+    const res=await fetch(src);
+    if(!res.ok) throw new Error('Cannot fetch QR');
+    const blob=await res.blob();
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url;
+    a.download=filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),1000);
+  }catch(_){
+    const a=document.createElement('a');
+    a.href=src;
+    a.download=filename;
+    a.target='_blank';
+    a.rel='noopener';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  }
 }
 async function handlePaidPayment(){
   if(paymentCompletedHandled) return;
