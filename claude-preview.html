@@ -266,7 +266,10 @@ nav{position:sticky;top:0;z-index:100;background:var(--bg);border-bottom:.5px so
 // ---- SUPABASE ----
 const SB_URL = window.AUTH_CONFIG?.supabaseUrl || 'https://piivygeapqvhjuppxhuy.supabase.co';
 const SB_KEY = window.AUTH_CONFIG?.supabaseAnonKey || 'sb_publishable_Mt7Of9hnsKpY8zczoTQtyg_zgGwqCyP';
+<<<<<<< HEAD
 let recoveryUrlHash = window.location.hash || '';
+=======
+>>>>>>> d52be79 (Update live Typehaus site)
 const sb = supabase.createClient(SB_URL, SB_KEY, {
   auth: {
     persistSession: true,
@@ -349,7 +352,11 @@ async function doReset(){
 async function doLogout(){ await sb.auth.signOut(); }
 
 function getRecoveryTokens(){
+<<<<<<< HEAD
   const hash=(window.location.hash || recoveryUrlHash || '').replace(/^#/,'');
+=======
+  const hash=window.location.hash.replace(/^#/,'');
+>>>>>>> d52be79 (Update live Typehaus site)
   if(!hash) return null;
   const params=new URLSearchParams(hash);
   const type=params.get('type');
@@ -373,7 +380,10 @@ async function completePasswordReset(){
   if(sessionError){ showMsg(sessionError.message,'error'); return; }
   const {error}=await sb.auth.updateUser({ password });
   if(error){ showMsg(error.message,'error'); return; }
+<<<<<<< HEAD
   recoveryUrlHash='';
+=======
+>>>>>>> d52be79 (Update live Typehaus site)
   window.history.replaceState({},'',window.location.pathname);
   showMsg('Password changed successfully','success');
   setTimeout(()=>{ showLogin(); closeAuth(); },900);
