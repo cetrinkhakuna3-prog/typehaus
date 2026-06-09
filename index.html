@@ -994,7 +994,7 @@ function renderPaymentResult(raw){
     link.href=data.paymentUrl;
     link.classList.add('payment-cta');
     link.querySelector('span').textContent='เปิดหน้าชำระเงินแยก';
-    link.style.display='inline-flex';
+    link.style.display='none';
   }else{
     frameWrap.style.display='none';
     frame.src='about:blank';
@@ -1014,12 +1014,18 @@ function renderPaymentResult(raw){
     debug.textContent='';
   }
   result.classList.add('open');
+  const payBtn=document.getElementById('pay-btn');
+  if(payBtn && !isPaid){
+    payBtn.disabled=true;
+    payBtn.style.display='block';
+    payBtn.innerHTML='<i class="ti ti-hourglass-empty" style="margin-right:6px"></i>เมื่อชำระเงินแล้วกรุณารอสักครู่';
+  }
 }
 async function downloadQRCode(){
   const img=document.getElementById('payment-qr-image');
   const src=img?.src||currentPayment?.qrCodeUrl;
   if(!currentPayment?.qrCodeUrl && currentPayment?.paymentUrl){
-    window.open(currentPayment.paymentUrl,'_blank','noopener');
+    alert('ตอนนี้ GBPay ส่ง QR มาเป็นหน้าเว็บ ไม่ใช่ไฟล์รูป QR โดยตรง จึงบันทึกเข้าแกลเลอรีจากปุ่มนี้ไม่ได้ ให้แตะค้างที่ QR ในกรอบแล้วเลือกบันทึกรูปภาพ');
     return;
   }
   if(!src){ return; }
@@ -1028,6 +1034,11 @@ async function downloadQRCode(){
     const res=await fetch(src);
     if(!res.ok) throw new Error('Cannot fetch QR');
     const blob=await res.blob();
+    const file=new File([blob],filename,{type:blob.type||'image/png'});
+    if(navigator.canShare&&navigator.share&&navigator.canShare({files:[file]})){
+      await navigator.share({files:[file],title:'TYPEHAUS QR Code'});
+      return;
+    }
     const url=URL.createObjectURL(blob);
     const a=document.createElement('a');
     a.href=url;
@@ -1110,8 +1121,13 @@ async function doPayment(){
   }catch(e){
     alert('Error: '+e.message);
   }
-  btn.disabled=false;
-  btn.innerHTML='<i class="ti ti-credit-card" style="margin-right:6px"></i>&#3626;&#3619;&#3657;&#3634;&#3591; QR &#3614;&#3619;&#3657;&#3629;&#3617;&#3648;&#3614;&#3618;&#3660;';
+  if(currentPayment){
+    btn.disabled=true;
+    btn.innerHTML='<i class="ti ti-hourglass-empty" style="margin-right:6px"></i>เมื่อชำระเงินแล้วกรุณารอสักครู่';
+  }else{
+    btn.disabled=false;
+    btn.innerHTML='<i class="ti ti-credit-card" style="margin-right:6px"></i>&#3626;&#3619;&#3657;&#3634;&#3591; QR &#3614;&#3619;&#3657;&#3629;&#3617;&#3648;&#3614;&#3618;&#3660;';
+  }
 }
 function closePay(){ resetPaymentUi(); document.getElementById('pay-modal').classList.remove('open'); }
 function closePayOut(e){ if(e.target===document.getElementById('pay-modal')) closePay(); }
