@@ -108,6 +108,13 @@ nav{position:sticky;top:0;z-index:100;background:var(--bg);border-bottom:.5px so
 .add-btn{background:var(--text);color:var(--bg);border:none;border-radius:999px;padding:8px 18px;font-size:13px;cursor:pointer;white-space:nowrap;font-family:inherit;font-weight:500;display:flex;align-items:center;gap:5px;transition:opacity .15s}
 .add-btn:hover{opacity:.75}
 .add-btn.added{background:none;color:var(--text);border:.5px solid var(--border2)}
+.license-picker{display:flex;flex-direction:column;gap:7px}
+.license-title{font-size:11px;color:var(--muted);font-weight:600}
+.license-options{display:grid;grid-template-columns:1fr;gap:6px}
+.license-option{border:.5px solid var(--border);background:var(--bg2);color:var(--muted);border-radius:9px;padding:8px 10px;font-size:12px;font-family:inherit;text-align:left;cursor:pointer;transition:border-color .15s,background .15s,color .15s}
+.license-option.active{border-color:var(--border2);background:var(--text);color:var(--bg)}
+.license-warning{display:none;font-size:11px;color:#b45309}
+.license-warning.show{display:block}
 .bottom-bar{position:fixed;bottom:0;left:0;right:0;background:var(--bg);border-top:.5px solid var(--border);padding:12px 20px 16px;display:flex;gap:10px;z-index:200}
 .bar-btn{flex:1;padding:12px;border-radius:999px;font-size:14px;font-family:inherit;cursor:pointer;font-weight:500;display:flex;align-items:center;justify-content:center;gap:7px;transition:opacity .15s,background .15s}
 .bar-btn.primary{background:var(--text);color:var(--bg);border:none}
@@ -398,12 +405,18 @@ const fonts = [
   ]},
   {id:6, name:'Syne Extra', style:'Display - Bold - Modern',  price:1, tag:'ELEGANT',    family:'"Syne",sans-serif', files:[]},
 ];
+const LICENSE_OPTIONS = [
+  {key:'personal', label:'ส่วนตัว'},
+  {key:'commercial-person', label:'เชิงพาณิชย์บุคคล'},
+  {key:'commercial-company', label:'เชิงพาณิชย์บริษัท'}
+];
 
 // ---- STATE ----
 let cart=[], inputCache={}, imgCache={}, currentUser=null, currentPayment=null, paymentPollTimer=null, paymentCompletedHandled=false;
 let paymentSuccessConfirmTimer=null;
 let ownedFontIds=new Set();
 let lastPaidCartSignature='';
+let selectedLicenses={};
 let previewFocusTimers={};
 let activePreviewFocusId=null;
 let lastPreviewFocusAt=0;
@@ -601,6 +614,9 @@ function render(){
   const grid=document.getElementById('font-grid');
   grid.innerHTML=fonts.map(f=>{
     const owned=ownedFontIds.has(f.id);
+    const selectedLicense=selectedLicenses[f.id]||'';
+    const cartItem=cart.find(c=>c.id===f.id);
+    const licenseOptions=LICENSE_OPTIONS.map(license=>`<button class="license-option ${selectedLicense===license.key?'active':''}" type="button" onclick="selectLicense(${f.id},'${license.key}')">${license.label}</button>`).join('');
     const links=owned
       ? (f.files||[]).map(file=>`<a class="font-file-link" href="./assets/fonts/${file}" download><i class="ti ti-download"></i><span>${file}</span></a>`).join('')
       : '';
@@ -624,10 +640,15 @@ function render(){
           <div class="font-file-links">${links || empty}</div>
         </div>
         <input class="type-input" id="ti-${f.id}" style="font-family:${f.family}" placeholder="Type to preview font on image..." onfocus="focusPreview(${f.id})" oninput="updatePreview(${f.id},this.value)"/>
+        <div class="license-picker">
+          <div class="license-title">เลือกรูปแบบก่อนเพิ่มลงตะกร้า</div>
+          <div class="license-options">${licenseOptions}</div>
+          <div class="license-warning" id="lw-${f.id}">กรุณาเลือกรูปแบบลิขสิทธิ์ก่อน</div>
+        </div>
         <div class="card-footer">
           <div><div class="price">&#3647;${f.price.toLocaleString()}</div><span class="price-sub">Lifetime license</span></div>
-          <button class="add-btn ${cart.find(c=>c.id===f.id)?'added':''}" id="ab-${f.id}" onclick="toggleCart(${f.id})">
-            ${cart.find(c=>c.id===f.id)?'<i class="ti ti-check" style="font-size:14px"></i> Added':'<i class="ti ti-plus" style="font-size:14px"></i> Add'}
+          <button class="add-btn ${cartItem?'added':''}" id="ab-${f.id}" onclick="toggleCart(${f.id})">
+            ${cartItem?'<i class="ti ti-check" style="font-size:14px"></i> Added':'<i class="ti ti-plus" style="font-size:14px"></i> Add'}
           </button>
         </div>
       </div>
@@ -687,10 +708,33 @@ function focusPreview(id){
   [180,420,760].forEach(t=>setTimeout(scrollPreview,t));
   previewFocusTimers[id]=setTimeout(scrollPreview,1040);
 }
+function getLicense(key){
+  return LICENSE_OPTIONS.find(license=>license.key===key)||null;
+}
+function selectLicense(id,key){
+  selectedLicenses[id]=key;
+  const cartItem=cart.find(c=>c.id===id);
+  const license=getLicense(key);
+  if(cartItem&&license){
+    cartItem.licenseKey=license.key;
+    cartItem.licenseLabel=license.label;
+  }
+  render();
+}
 function toggleCart(id){
   if(ownedFontIds.has(id)){ openPurchases(); return; }
+  const license=getLicense(selectedLicenses[id]);
+  if(!license){
+    const warning=document.getElementById('lw-'+id);
+    if(warning) warning.classList.add('show');
+    return;
+  }
   const i=cart.findIndex(c=>c.id===id);
-  if(i>-1) cart.splice(i,1); else cart.push(fonts.find(f=>f.id===id));
+  if(i>-1) cart.splice(i,1);
+  else {
+    const font=fonts.find(f=>f.id===id);
+    cart.push({...font, licenseKey:license.key, licenseLabel:license.label});
+  }
   render();
   pulseCartButton();
 }
@@ -715,7 +759,7 @@ function openCart(){
   if(!cart.length){ el.innerHTML='<div class="empty-msg">&#3605;&#3632;&#3585;&#3619;&#3657;&#3634;&#3623;&#3656;&#3634;&#3591;&#3648;&#3611;&#3621;&#3656;&#3634;</div>'; return; }
   const total=cart.reduce((s,f)=>s+f.price,0);
   el.innerHTML=cart.map(f=>`<div class="modal-item">
-    <div><div class="modal-item-name">${f.name}</div><div class="modal-item-sub">${f.style}</div></div>
+    <div><div class="modal-item-name">${f.name}</div><div class="modal-item-sub">${f.style} · ${f.licenseLabel}</div></div>
     <div style="display:flex;align-items:center;gap:10px">
       <span style="font-weight:600">&#3647;${f.price.toLocaleString()}</span>
       <button class="remove-btn" onclick="removeCart(${f.id})"><i class="ti ti-x" style="font-size:14px"></i></button>
@@ -737,7 +781,7 @@ function checkout(){
   const total=cart.reduce((s,f)=>s+f.price,0);
   resetPaymentUi();
   document.getElementById('pay-summary').innerHTML=
-    cart.map(f=>`<div class="pay-item"><span>${f.name}</span><span>&#3647;${f.price.toLocaleString()}</span></div>`).join('')+
+    cart.map(f=>`<div class="pay-item"><span>${f.name}<br><small style="color:var(--muted)">${f.licenseLabel}</small></span><span>&#3647;${f.price.toLocaleString()}</span></div>`).join('')+
     `<div class="pay-total"><span>Total</span><span>&#3647;${total.toLocaleString()}</span></div>`;
   document.getElementById('pay-modal').classList.add('open');
   closeOverlay('cart-overlay');
@@ -879,7 +923,7 @@ function renderPaymentResult(raw){
 async function handlePaidPayment(){
   if(paymentCompletedHandled) return;
   paymentCompletedHandled=true;
-  lastPaidCartSignature=cart.map(f=>f.id).sort((a,b)=>a-b).join(',');
+  lastPaidCartSignature=cart.map(f=>`${f.id}:${f.licenseKey}`).sort().join(',');
   if(paymentSuccessConfirmTimer){ clearTimeout(paymentSuccessConfirmTimer); paymentSuccessConfirmTimer=null; }
   await refreshOwnedFonts();
 }
@@ -908,7 +952,7 @@ async function pollPaymentStatus(orderId){
   },5000);
 }
 async function doPayment(){
-  const cartSignature=cart.map(f=>f.id).sort((a,b)=>a-b).join(',');
+  const cartSignature=cart.map(f=>`${f.id}:${f.licenseKey}`).sort().join(',');
   if(lastPaidCartSignature && cartSignature===lastPaidCartSignature){
     openPurchases();
     return;
@@ -927,9 +971,10 @@ async function doPayment(){
         orderId:order.id,
         amount:total,
         fontIds:cart.map(f=>f.id),
+        items:cart.map(f=>({fontId:f.id,fontName:f.name,licenseKey:f.licenseKey,licenseLabel:f.licenseLabel,price:f.price})),
         userId:currentUser.id,
         customerEmail:currentUser.email,
-        description:`TYPEHAUS order ${order.id}`
+        description:`TYPEHAUS order ${order.id} - ${cart.map(f=>`${f.name} (${f.licenseLabel})`).join(', ')}`
       }
     });
     if(paymentError) throw paymentError;
