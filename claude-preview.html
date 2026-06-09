@@ -92,7 +92,7 @@ nav{position:sticky;top:0;z-index:100;background:var(--bg);border-bottom:.5px so
 .card-body{padding:14px 16px 16px;display:flex;flex-direction:column;gap:10px}
 .font-title-row{display:flex;align-items:baseline;gap:10px}
 .font-name{font-size:15px;font-weight:600;min-width:0}
-.compat-list{margin-left:auto;color:var(--hint);font-size:10px;letter-spacing:.01em;white-space:nowrap;line-height:1}
+.compat-list{display:inline-block;margin-left:8px;color:var(--hint);font-size:10px;letter-spacing:.01em;white-space:nowrap;line-height:1;font-weight:400}
 .font-meta{font-size:12px;color:var(--muted);margin-top:-5px}
 .font-files{display:flex;flex-direction:column;gap:6px;margin-top:2px}
 .font-files-title{font-size:11px;color:var(--muted);font-weight:600;letter-spacing:.01em}
@@ -662,9 +662,9 @@ function render(){
         <div class="font-overlay"><div class="font-overlay-text" id="ft-${f.id}" style="font-family:${f.family}"></div></div>
       </div>
       <div class="card-body">
-        <div><div class="font-title-row"><div class="font-name">${f.name}</div><div class="compat-list">macOS &middot; Windows &middot; iPad &middot; iPhone &middot; Android</div></div><div class="font-meta">${f.style}</div></div>
+        <div><div class="font-name">${f.name}</div><div class="font-meta">${f.style}</div></div>
         <div class="font-files">
-          <div class="font-files-title">ไฟล์ฟอนต์</div>
+          <div class="font-files-title">ไฟล์ฟอนต์ <span class="compat-list">macOS &middot; Windows &middot; iPad &middot; iPhone &middot; Android</span></div>
           <div class="font-file-links">${links || empty}</div>
         </div>
         <input class="type-input" id="ti-${f.id}" style="font-family:${f.family}" placeholder="Type to preview font on image..." onfocus="focusPreview(${f.id})" oninput="updatePreview(${f.id},this.value)"/>
