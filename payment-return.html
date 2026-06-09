@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="th">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ชำระเงินเสร็จสิ้น</title>
+    <style>
+      :root {
+        --bg: #f4f7fb;
+        --card: #ffffff;
+        --text: #111827;
+        --muted: #6b7280;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        background: radial-gradient(circle at top, #ffffff, #e9f0ff);
+        color: var(--text);
+        font-family: system-ui, Arial, sans-serif;
+      }
+      .wrap {
+        width: min(520px, 95vw);
+        background: var(--card);
+        border: 1px solid #d9e2f3;
+        border-radius: 16px;
+        padding: 24px;
+        box-shadow: 0 16px 40px rgba(17, 24, 39, 0.08);
+      }
+      h1 { margin-top: 0; font-size: 1.3rem; }
+      p { margin: 0.45rem 0; }
+      .muted { color: var(--muted); }
+      .chip {
+        display: inline-block;
+        padding: 6px 10px;
+        border-radius: 999px;
+        background: #eef2ff;
+        color: #312e81;
+        font-weight: 600;
+        font-size: 0.9rem;
+        margin: 8px 0;
+      }
+      .chips { margin: 12px 0 16px; }
+      .chips .ok { background: #dcfce7; color: #166534; }
+      .chips .warn { background: #fef9c3; color: #854d0e; }
+      .row {
+        display: flex;
+        gap: 8px;
+        margin-top: 16px;
+      }
+      .btn {
+        border: none;
+        padding: 10px 14px;
+        border-radius: 10px;
+        font-weight: 700;
+        cursor: pointer;
+      }
+      .btn.primary { background: #2563eb; color: #fff; }
+      .btn.ghost { background: #eef2ff; color: #1e3a8a; }
+      pre {
+        margin: 12px 0 0;
+        background: #0b1020;
+        color: #d1e2ff;
+        border-radius: 10px;
+        padding: 10px;
+        overflow: auto;
+        font-size: 0.82rem;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="wrap">
+      <h1>กลับจากหน้าเกตเวย์ชำระเงิน</h1>
+      <p class="muted">กรุณาอย่าเข้า <code>/functions/v1/gbpay-webhook</code> โดยตรงในเบราว์เซอร์ ระบบ callback นี้ใช้รับข้อมูลเฉพาะจาก GB Prime Pay</p>
+
+      <div id="statusChip" class="chip">กำลังเช็กข้อมูลการชำระ</div>
+
+      <div class="chips">
+        <p><strong>ออเดอร์:</strong> <span id="orderId">-</span></p>
+        <p><strong>Payment ID:</strong> <span id="providerId">-</span></p>
+        <p><strong>สถานะจาก URL:</strong> <span id="statusFromGateway">-</span></p>
+      </div>
+
+      <p class="muted" id="helpText">
+        ระบบ webhook จะอัปเดตสถานะใน Supabase แบบ background และหน้าเว็บหลักจะโหลดข้อมูลล่าสุดจากฐานข้อมูลเอง
+      </p>
+
+      <div class="row">
+        <button class="btn primary" id="goHome">กลับหน้า checkout</button>
+        <button class="btn ghost" id="copyPayload">คัดลอกข้อมูล callback</button>
+      </div>
+
+      <pre id="rawPayload"></pre>
+    </main>
+
+    <script>
+      (function() {
+        const status = new URLSearchParams(window.location.search);
+        const orderId = status.get("order_id") || status.get("orderId") || status.get("merchantDefined1") || status.get("referenceNo") || status.get("invoiceNo") || "-";
+        const providerId = status.get("providerPaymentId") || status.get("paymentId") || status.get("id") || status.get("chargeId") || "-";
+        const rawStatus = status.get("status") || status.get("resultCode") || status.get("paymentStatus") || "-";
+        const statusLabel = (rawStatus || "pending").toString().toLowerCase();
+
+        document.getElementById("orderId").textContent = orderId;
+        document.getElementById("providerId").textContent = providerId;
+        document.getElementById("statusFromGateway").textContent = statusLabel;
+
+        const chip = document.getElementById("statusChip");
+        if (["paid", "success", "successful", "completed", "approve", "approved", "paid_success", "00"].includes(statusLabel)) {
+          chip.className = "chip ok";
+          chip.textContent = "รับชำระเงินสำเร็จแล้ว";
+          document.getElementById("helpText").textContent = "ชำระเงินสำเร็จ กำลังพาไปหน้าดาวน์โหลดไฟล์";
+          const target = "/claude-preview.html?download=1"
+            + "&order_id=" + encodeURIComponent(orderId)
+            + "&providerPaymentId=" + encodeURIComponent(providerId);
+          setTimeout(() => {
+            window.location.href = target;
+          }, 1600);
+        } else if (["failed", "invalidrequest", "canceled", "error", "declined", "rejected", "timeout", "expired"].includes(statusLabel)) {
+          chip.className = "chip warn";
+          chip.textContent = "ชำระเงินไม่สำเร็จ";
+        } else {
+          chip.className = "chip";
+          chip.textContent = "รับแจ้งผลจากเกตเวย์แล้ว (รออัปเดตขั้นสุดท้าย)";
+        }
+
+        const payload = Object.fromEntries(status.entries());
+        document.getElementById("rawPayload").textContent = JSON.stringify(payload, null, 2);
+
+        document.getElementById("goHome").addEventListener("click", () => {
+          window.location.href = "/claude-preview.html";
+        });
+
+        document.getElementById("copyPayload").addEventListener("click", async () => {
+          await navigator.clipboard.writeText(JSON.stringify(payload));
+          const btn = document.getElementById("copyPayload");
+          btn.textContent = "คัดลอกแล้ว";
+          setTimeout(() => (btn.textContent = "คัดลอกข้อมูล callback"), 1200);
+        });
+      })();
+    </script>
+  </body>
+</html>
