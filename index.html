@@ -87,14 +87,6 @@ nav{position:sticky;top:0;z-index:100;background:var(--bg);border-bottom:.5px so
 .tag{position:absolute;top:10px;right:10px;z-index:6;font-size:10px;font-weight:600;letter-spacing:.07em;color:var(--muted);background:var(--bg);border:.5px solid var(--border);padding:3px 9px;border-radius:999px;pointer-events:none}
 .font-overlay{position:absolute;inset:0;z-index:3;display:flex;align-items:center;justify-content:center;pointer-events:none;padding:12px}
 .font-overlay-text{font-size:42px;line-height:1.08;text-align:center;color:#fff;text-shadow:0 2px 12px rgba(0,0,0,.72);word-break:break-word;display:none;max-width:92%}
-.mobile-preview-dock{display:none}
-@media(max-width:720px){
-  .mobile-preview-dock{position:fixed;left:14px;right:14px;bottom:calc(env(safe-area-inset-bottom) + 96px);height:148px;z-index:260;border:1px solid rgba(255,255,255,.24);border-radius:14px;overflow:hidden;background:#111;box-shadow:0 18px 46px rgba(0,0,0,.42);opacity:0;transform:translateY(10px);pointer-events:none;transition:opacity .16s ease,transform .16s ease}
-  .mobile-preview-dock.open{display:block;opacity:1;transform:translateY(0)}
-  .mobile-preview-dock img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:brightness(.48) saturate(.94)}
-  .mobile-preview-dock-text{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:14px;color:#fff;font-size:34px;line-height:1.08;text-align:center;text-shadow:0 2px 14px rgba(0,0,0,.8);word-break:break-word}
-  .mobile-preview-dock-name{position:absolute;left:12px;top:10px;color:rgba(255,255,255,.78);font-size:11px;font-weight:600;letter-spacing:0}
-}
 .card-body{padding:14px 16px 16px;display:flex;flex-direction:column;gap:10px}
 .font-name{font-size:15px;font-weight:600}
 .font-meta{font-size:12px;color:var(--muted);margin-top:-5px}
@@ -105,7 +97,7 @@ nav{position:sticky;top:0;z-index:100;background:var(--bg);border-bottom:.5px so
 .font-file-link:hover{background:var(--bg)}
 .font-file-link i{font-size:12px}
 .font-file-empty{font-size:11px;color:var(--hint)}
-.type-input{width:100%;padding:9px 11px;background:var(--bg2);border:.5px solid var(--border);border-radius:var(--r);color:var(--text);font-size:16px;font-family:inherit;outline:none;transition:border-color .15s}
+.type-input{width:100%;padding:9px 11px;background:var(--bg2);border:.5px solid var(--border);border-radius:var(--r);color:var(--text);font-size:20px;font-family:inherit;line-height:1.35;outline:none;transition:border-color .15s}
 .type-input:focus{border-color:var(--border2)}
 .type-input::placeholder{color:var(--hint)}
 .card-footer{display:flex;align-items:center;justify-content:space-between;gap:8px}
@@ -280,12 +272,6 @@ function toggleFontDetails(){
   <button class="bar-btn primary" id="bottom-cart-btn" onclick="openCart()"><i class="ti ti-shopping-bag"></i><span id="bottom-cart-label">&#3605;&#3632;&#3585;&#3619;&#3657;&#3634;</span><span class="bottom-cart-count" id="cart-count">0</span></button>
 </div>
 
-<div class="mobile-preview-dock" id="mobile-preview-dock" aria-hidden="true">
-  <img id="mobile-preview-img" alt="">
-  <div class="mobile-preview-dock-name" id="mobile-preview-name"></div>
-  <div class="mobile-preview-dock-text" id="mobile-preview-text"></div>
-</div>
-
 <div class="modal-overlay" id="cart-overlay" onclick="closeCartOut(event)">
   <div class="modal"><div class="modal-handle"></div><h2>&#3605;&#3632;&#3585;&#3619;&#3657;&#3634;&#3626;&#3636;&#3609;&#3588;&#3657;&#3634;</h2><div id="cart-items"></div></div>
 </div>
@@ -409,7 +395,6 @@ let lastPaidCartSignature='';
 let previewFocusTimers={};
 let activePreviewFocusId=null;
 let lastPreviewFocusAt=0;
-let mobilePreviewHideTimer=null;
 
 // ---- DEFAULT IMAGES from hidden HTML tags ----
 function getDefaultSrc(id) {
@@ -626,7 +611,7 @@ function render(){
           <div class="font-files-title">ไฟล์ฟอนต์</div>
           <div class="font-file-links">${links || empty}</div>
         </div>
-        <input class="type-input" id="ti-${f.id}" style="font-family:${f.family}" placeholder="Type to preview font on image..." onfocus="focusPreview(${f.id}); showMobileTypingPreview(${f.id},this.value)" oninput="updatePreview(${f.id},this.value); showMobileTypingPreview(${f.id},this.value)" onblur="scheduleHideMobilePreview()"/>
+        <input class="type-input" id="ti-${f.id}" style="font-family:${f.family}" placeholder="Type to preview font on image..." onfocus="focusPreview(${f.id})" oninput="updatePreview(${f.id},this.value)"/>
         <div class="card-footer">
           <div><div class="price">&#3647;${f.price.toLocaleString()}</div><span class="price-sub">Lifetime license</span></div>
           <button class="add-btn ${cart.find(c=>c.id===f.id)?'added':''}" id="ab-${f.id}" onclick="toggleCart(${f.id})">
@@ -671,47 +656,6 @@ function updatePreview(id,val){
     ft.style.display='none';
     if(img) img.style.filter='';
   }
-}
-function setMobilePreviewDockPosition(){
-  const dock=document.getElementById('mobile-preview-dock');
-  if(!dock||!window.matchMedia('(max-width: 720px)').matches) return;
-  const vv=window.visualViewport;
-  const keyboardGap=vv?Math.max(0,window.innerHeight-vv.height-vv.offsetTop):0;
-  dock.style.bottom=`${Math.max(88,keyboardGap+12)}px`;
-}
-function showMobileTypingPreview(id,val){
-  if(!window.matchMedia('(max-width: 720px)').matches) return;
-  clearTimeout(mobilePreviewHideTimer);
-  const dock=document.getElementById('mobile-preview-dock');
-  const img=document.getElementById('mobile-preview-img');
-  const text=document.getElementById('mobile-preview-text');
-  const name=document.getElementById('mobile-preview-name');
-  const f=fonts.find(x=>x.id===id);
-  if(!dock||!img||!text||!name||!f) return;
-  const src=imgCache[id]||document.getElementById('ip-'+id)?.src||getDefaultSrc(id);
-  if(src) img.src=src;
-  name.textContent=f.name;
-  text.style.fontFamily=f.family;
-  text.textContent=(val||'').trim()||'พิมพ์เพื่อดูตัวอย่าง';
-  setMobilePreviewDockPosition();
-  dock.classList.add('open');
-  dock.setAttribute('aria-hidden','false');
-}
-function scheduleHideMobilePreview(){
-  clearTimeout(mobilePreviewHideTimer);
-  mobilePreviewHideTimer=setTimeout(()=>{
-    if(document.activeElement?.classList?.contains('type-input')) return;
-    const dock=document.getElementById('mobile-preview-dock');
-    if(dock){
-      dock.classList.remove('open');
-      dock.setAttribute('aria-hidden','true');
-    }
-    activePreviewFocusId=null;
-  },220);
-}
-if(window.visualViewport){
-  window.visualViewport.addEventListener('resize',setMobilePreviewDockPosition);
-  window.visualViewport.addEventListener('scroll',setMobilePreviewDockPosition);
 }
 function focusPreview(id){
   if(!window.matchMedia('(max-width: 720px)').matches) return;
