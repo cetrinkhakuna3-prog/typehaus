@@ -25,17 +25,20 @@ nav{position:sticky;top:0;z-index:100;background:var(--bg);border-bottom:.5px so
 .user-btn,.cart-btn{background:none;border:.5px solid var(--border2);border-radius:999px;padding:7px 14px;font-size:13px;color:var(--text);cursor:pointer;display:flex;align-items:center;gap:6px;font-family:inherit;transition:background .15s}
 .user-btn:hover,.cart-btn:hover{background:var(--bg2)}
 .cart-count{background:var(--text);color:var(--bg);border-radius:50%;width:18px;height:18px;font-size:11px;font-weight:600;display:flex;align-items:center;justify-content:center}
+.bottom-cart-count{background:var(--bg);color:var(--text);border-radius:999px;min-width:22px;height:22px;padding:0 7px;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.cart-pulse{animation:cartPulse .35s ease}
 .hero{padding:40px 20px 28px;border-bottom:.5px solid var(--border)}
 .hero h1{font-family:"Playfair Display",serif;font-size:clamp(26px,5vw,44px);font-weight:400;line-height:1.15;margin-bottom:8px}
 .hero p{font-size:13px;color:var(--muted)}
 .grid{padding:20px;display:grid;grid-template-columns:1fr;gap:16px}
 @media(min-width:580px){.grid{grid-template-columns:repeat(2,1fr)}}
 @media(min-width:880px){.grid{grid-template-columns:repeat(3,1fr);padding:28px 32px}.hero{padding:56px 32px 36px}nav{padding:16px 32px}}
+@media(max-width:579px){.font-overlay-text{font-size:36px}.type-input{font-size:16px}}
 .card{background:var(--bg);border:.5px solid var(--border);border-radius:20px;overflow:hidden;display:flex;flex-direction:column;transition:border-color .2s,transform .2s}
 .card:hover{border-color:var(--border2);transform:translateY(-2px)}
 .img-area{position:relative;aspect-ratio:4/3;background:var(--bg2);display:flex;align-items:center;justify-content:center;cursor:pointer;overflow:hidden}
 .img-area input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;z-index:5}
-.img-preview{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.img-preview{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:filter .24s ease,transform .24s ease}
 .img-placeholder{display:flex;flex-direction:column;align-items:center;gap:8px;color:var(--hint);pointer-events:none;user-select:none}
 .img-placeholder i{font-size:28px}
 .img-placeholder span{font-size:12px}
@@ -44,7 +47,7 @@ nav{position:sticky;top:0;z-index:100;background:var(--bg);border-bottom:.5px so
 .img-area:hover .img-overlay{display:flex}
 .tag{position:absolute;top:10px;right:10px;z-index:6;font-size:10px;font-weight:600;letter-spacing:.07em;color:var(--muted);background:var(--bg);border:.5px solid var(--border);padding:3px 9px;border-radius:999px;pointer-events:none}
 .font-overlay{position:absolute;inset:0;z-index:3;display:flex;align-items:center;justify-content:center;pointer-events:none;padding:12px}
-.font-overlay-text{font-size:28px;line-height:1.2;text-align:center;color:#fff;text-shadow:0 2px 10px rgba(0,0,0,.6);word-break:break-word;display:none}
+.font-overlay-text{font-size:42px;line-height:1.08;text-align:center;color:#fff;text-shadow:0 2px 12px rgba(0,0,0,.72);word-break:break-word;display:none;max-width:92%}
 .card-body{padding:14px 16px 16px;display:flex;flex-direction:column;gap:10px}
 .font-name{font-size:15px;font-weight:600}
 .font-meta{font-size:12px;color:var(--muted);margin-top:-5px}
@@ -55,7 +58,7 @@ nav{position:sticky;top:0;z-index:100;background:var(--bg);border-bottom:.5px so
 .font-file-link:hover{background:var(--bg)}
 .font-file-link i{font-size:12px}
 .font-file-empty{font-size:11px;color:var(--hint)}
-.type-input{width:100%;padding:8px 11px;background:var(--bg2);border:.5px solid var(--border);border-radius:var(--r);color:var(--text);font-size:13px;font-family:inherit;outline:none;transition:border-color .15s}
+.type-input{width:100%;padding:9px 11px;background:var(--bg2);border:.5px solid var(--border);border-radius:var(--r);color:var(--text);font-size:16px;font-family:inherit;outline:none;transition:border-color .15s}
 .type-input:focus{border-color:var(--border2)}
 .type-input::placeholder{color:var(--hint)}
 .card-footer{display:flex;align-items:center;justify-content:space-between;gap:8px}
@@ -70,6 +73,8 @@ nav{position:sticky;top:0;z-index:100;background:var(--bg);border-bottom:.5px so
 .bar-btn.primary:hover{opacity:.8}
 .bar-btn.secondary{background:none;color:var(--text);border:.5px solid var(--border2)}
 .bar-btn.secondary:hover{background:var(--bg2)}
+.cart-actions{padding-top:18px;display:flex;gap:10px}
+.cart-actions .bar-btn{flex:1}
 .modal-overlay{display:none;position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.5);align-items:flex-end;justify-content:center}
 .modal-overlay.open{display:flex}
 .modal{background:var(--bg);border-radius:24px 24px 0 0;padding:20px 20px 40px;width:100%;max-width:600px;max-height:80vh;overflow-y:auto}
@@ -139,6 +144,7 @@ nav{position:sticky;top:0;z-index:100;background:var(--bg);border-bottom:.5px so
 .admin-note{font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.5}
 .admin-empty{padding:24px 0;text-align:center;color:var(--muted)}
 @keyframes spin{to{transform:rotate(360deg)}}
+@keyframes cartPulse{0%{transform:scale(1)}45%{transform:scale(1.04)}100%{transform:scale(1)}}
 .spinner{display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;margin-right:6px;vertical-align:middle}
 .user-badge{font-size:12px;padding:4px 10px;background:var(--bg2);border-radius:999px;color:var(--muted)}
 </style>
@@ -159,7 +165,6 @@ nav{position:sticky;top:0;z-index:100;background:var(--bg);border-bottom:.5px so
   <div class="nav-right">
     <div id="admin-area"></div>
     <div id="user-area"><button class="user-btn" onclick="openAuth()"><i class="ti ti-user"></i> &#3648;&#3586;&#3657;&#3634;&#3626;&#3641;&#3656;&#3619;&#3632;&#3610;&#3610;</button></div>
-    <button class="cart-btn" onclick="openCart()"><i class="ti ti-shopping-bag"></i> &#3605;&#3632;&#3585;&#3619;&#3657;&#3634; <span class="cart-count" id="cart-count">0</span></button>
   </div>
 </nav>
 
@@ -172,10 +177,10 @@ nav{position:sticky;top:0;z-index:100;background:var(--bg);border-bottom:.5px so
 
 <div class="bottom-bar">
   <button class="bar-btn secondary" onclick="openPurchases()"><i class="ti ti-receipt"></i>&#3626;&#3636;&#3656;&#3591;&#3607;&#3637;&#3656;&#3595;&#3639;&#3657;&#3629;&#3652;&#3611;&#3649;&#3621;&#3657;&#3623;</button>
-  <button class="bar-btn primary" onclick="checkout()"><i class="ti ti-credit-card"></i>&#3594;&#3635;&#3619;&#3632;&#3648;&#3591;&#3636;&#3609;</button>
+  <button class="bar-btn primary" id="bottom-cart-btn" onclick="openCart()"><i class="ti ti-shopping-bag"></i><span id="bottom-cart-label">&#3605;&#3632;&#3585;&#3619;&#3657;&#3634;</span><span class="bottom-cart-count" id="cart-count">0</span></button>
 </div>
 
-<div class="modal-overlay" id="cart-overlay" onclick="closeOverlay('cart-overlay')">
+<div class="modal-overlay" id="cart-overlay" onclick="closeCartOut(event)">
   <div class="modal"><div class="modal-handle"></div><h2>&#3605;&#3632;&#3585;&#3619;&#3657;&#3634;&#3626;&#3636;&#3609;&#3588;&#3657;&#3634;</h2><div id="cart-items"></div></div>
 </div>
 
@@ -511,7 +516,7 @@ function render(){
           <div class="font-files-title">ไฟล์ฟอนต์</div>
           <div class="font-file-links">${links || empty}</div>
         </div>
-        <input class="type-input" id="ti-${f.id}" placeholder="Type to preview font on image..." oninput="updatePreview(${f.id},this.value)"/>
+        <input class="type-input" id="ti-${f.id}" style="font-family:${f.family}" placeholder="Type to preview font on image..." oninput="updatePreview(${f.id},this.value)"/>
         <div class="card-footer">
           <div><div class="price">&#3647;${f.price.toLocaleString()}</div><span class="price-sub">Lifetime license</span></div>
           <button class="add-btn ${cart.find(c=>c.id===f.id)?'added':''}" id="ab-${f.id}" onclick="toggleCart(${f.id})">
@@ -520,7 +525,7 @@ function render(){
         </div>
       </div>
     </div>`;}).join('');
-  document.getElementById('cart-count').textContent=cart.length;
+  updateCartUi();
   fonts.forEach(f=>{
     const src=imgCache[f.id]||getDefaultSrc(f.id);
     if(src) setImg(f.id,src);
@@ -543,19 +548,42 @@ function handleImg(id,inp){
 function updatePreview(id,val){
   inputCache[id]=val;
   const ft=document.getElementById('ft-'+id); if(!ft) return;
+  const img=document.getElementById('ip-'+id);
   const f=fonts.find(x=>x.id===id);
   ft.style.fontFamily=f.family;
-  if(val.trim()){ ft.textContent=val; ft.style.display='block'; }
-  else ft.style.display='none';
+  if(val.trim()){
+    const shade=Math.max(.42,.78-(val.trim().length*.012));
+    ft.textContent=val;
+    ft.style.display='block';
+    if(img) img.style.filter=`brightness(${shade}) saturate(.92)`;
+  }
+  else {
+    ft.style.display='none';
+    if(img) img.style.filter='';
+  }
 }
 function toggleCart(id){
   if(ownedFontIds.has(id)){ openPurchases(); return; }
   const i=cart.findIndex(c=>c.id===id);
   if(i>-1) cart.splice(i,1); else cart.push(fonts.find(f=>f.id===id));
   render();
+  pulseCartButton();
 }
 
 // ---- CART ----
+function updateCartUi(){
+  const countEl=document.getElementById('cart-count');
+  const labelEl=document.getElementById('bottom-cart-label');
+  if(countEl) countEl.textContent=cart.length;
+  if(labelEl) labelEl.textContent=cart.length?`ตะกร้า · ${cart.length} รายการ`:'ตะกร้า';
+}
+function pulseCartButton(){
+  const btn=document.getElementById('bottom-cart-btn');
+  if(!btn) return;
+  btn.classList.remove('cart-pulse');
+  void btn.offsetWidth;
+  btn.classList.add('cart-pulse');
+}
 function openCart(){
   document.getElementById('cart-overlay').classList.add('open');
   const el=document.getElementById('cart-items');
@@ -567,10 +595,11 @@ function openCart(){
       <span style="font-weight:600">&#3647;${f.price.toLocaleString()}</span>
       <button class="remove-btn" onclick="removeCart(${f.id})"><i class="ti ti-x" style="font-size:14px"></i></button>
     </div>
-  </div>`).join('')+`<div class="modal-total"><span>Total</span><span>&#3647;${total.toLocaleString()}</span></div>`;
+  </div>`).join('')+`<div class="modal-total"><span>Total</span><span>&#3647;${total.toLocaleString()}</span></div><div class="cart-actions"><button class="bar-btn secondary" onclick="closeOverlay('cart-overlay')"><i class="ti ti-arrow-left"></i>เลือกต่อ</button><button class="bar-btn primary" onclick="checkout()"><i class="ti ti-credit-card"></i>ชำระเงิน</button></div>`;
 }
 function removeCart(id){ cart=cart.filter(c=>c.id!==id); render(); openCart(); }
 function closeOverlay(id){ document.getElementById(id).classList.remove('open'); }
+function closeCartOut(e){ if(e.target===document.getElementById('cart-overlay')) closeOverlay('cart-overlay'); }
 
 // ---- CHECKOUT ----
 function checkout(){
@@ -586,6 +615,7 @@ function checkout(){
     cart.map(f=>`<div class="pay-item"><span>${f.name}</span><span>&#3647;${f.price.toLocaleString()}</span></div>`).join('')+
     `<div class="pay-total"><span>Total</span><span>&#3647;${total.toLocaleString()}</span></div>`;
   document.getElementById('pay-modal').classList.add('open');
+  closeOverlay('cart-overlay');
 }
 function setPaymentStatus(status,label){
   const pill=document.getElementById('payment-status-pill');
