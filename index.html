@@ -16,6 +16,7 @@
 @font-face{font-family:"MiPie Thin Custom";src:url("./assets/fonts/MiPieThin.ttf") format("truetype");font-display:swap}
 @font-face{font-family:"MiPie Bold Custom";src:url("./assets/fonts/MiPieBold.ttf") format("truetype");font-display:swap}
 @font-face{font-family:"Naruke Custom";src:url("./assets/fonts/Naruke.ttf") format("truetype");font-display:swap}
+@font-face{font-family:"Lunari Custom";src:url("./assets/fonts/Lunari.ttf") format("truetype");font-display:swap}
 :root{--bg:#fff;--bg2:#f5f5f3;--text:#111110;--muted:#6b6a67;--hint:#a8a7a3;--border:rgba(0,0,0,.1);--border2:rgba(0,0,0,.2);--r:8px;--rl:16px}
 @media(prefers-color-scheme:dark){:root{--bg:#111110;--bg2:#1a1a18;--text:#f0efe9;--muted:#8a8a86;--hint:#555552;--border:rgba(255,255,255,.1);--border2:rgba(255,255,255,.2)}}
 body{font-family:"Space Grotesk",sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding-bottom:88px}
@@ -501,7 +502,13 @@ const fonts = [
     'MiPieThin.ttf',
     'MiPie.pdf'
   ]},
-  {id:6, name:'Syne Extra', style:'Display - Bold - Modern',  price:1, tag:'ELEGANT',    family:'"Syne",sans-serif', files:[]},
+  {id:6, name:'Lunari',     style:'Thai - Friendly - Commercial', price:1, tag:'ELEGANT', family:'"Lunari Custom", cursive', files:[
+    'Lunari.ttf',
+    'LunariBold.ttf',
+    'LunariDot.ttf',
+    'LunariThin.ttf',
+    'Lunari-License.jpg'
+  ]},
   {id:7, name:'Naruke',     style:'Thai - Cute - Planner',    price:1, tag:'NEW',        family:'"Naruke Custom", cursive', files:[
     'Naruke.ttf',
     'NarukeBold.ttf',
