@@ -716,7 +716,7 @@ async function doReg(){
     return;
   }
   toggleResendConfirmation(true);
-  showMsg('ส่งอีเมลยืนยันแล้ว กรุณาเช็กทั้ง Inbox และ Spam','success');
+  showMsg('ส่งอีเมลยืนยันแล้ว กรุณาเช็กทั้งอีเมล Inbox และ Spam','success');
 }
 async function resendConfirmationEmail(){
   const email=(document.getElementById('reg-email').value || pendingConfirmationEmail || '').trim().toLowerCase();
@@ -736,7 +736,7 @@ async function resendConfirmationEmail(){
   }
   pendingConfirmationEmail=email;
   toggleResendConfirmation(true);
-  showMsg('ส่งอีเมลยืนยันให้อีกครั้งแล้ว กรุณาเช็ก Inbox และ Spam','success');
+  showMsg('ส่งอีเมลยืนยันให้อีกครั้งแล้ว กรุณาเช็กทั้งอีเมล Inbox และ Spam','success');
 }
 async function doReset(){
   const email=document.getElementById('rs-email').value;
