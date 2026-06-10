@@ -224,6 +224,8 @@ nav{position:sticky;top:0;z-index:100;background:var(--bg);border-bottom:.5px so
 @media(max-width:580px){.receipt-grid{grid-template-columns:1fr}}
 .payment-result{display:none;background:var(--bg2);border-radius:var(--rl);padding:16px;margin-bottom:16px}
 .payment-result.open{display:block}
+.payment-result.paid-result{background:linear-gradient(145deg,#ecfdf5 0%,#f7fee7 54%,#fff 100%);border:1px solid #bbf7d0;border-radius:22px;padding:24px 18px;text-align:center;box-shadow:0 18px 46px rgba(6,95,70,.14)}
+.payment-result.paid-result .status-pill{display:none}
 .status-pill{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:999px;font-size:12px;font-weight:600;background:rgba(0,0,0,.06);color:var(--text);margin-bottom:12px}
 .qr-box{display:flex;justify-content:center;align-items:center;background:var(--bg);border:.5px solid var(--border);border-radius:16px;padding:14px;margin:12px auto;width:min(100%,276px);aspect-ratio:1/1}
 .qr-box img{width:100%;height:100%;max-width:248px;max-height:248px;display:block;object-fit:contain}
@@ -231,8 +233,12 @@ nav{position:sticky;top:0;z-index:100;background:var(--bg);border-bottom:.5px so
 .qr-save-btn:hover{background:var(--bg2)}
 .pay-note{font-size:12px;line-height:1.55;color:var(--muted)}
 .pay-code{margin-top:10px;padding:10px 12px;border-radius:12px;background:var(--bg);border:.5px solid var(--border);font-size:12px;word-break:break-all}
-.pay-success{margin-top:10px;padding:10px 12px;border-radius:12px;background:#ecfdf5;border:1px solid #bbf7d0;color:#065f46;font-size:12px;line-height:1.5}
-.pay-confirm-btn{display:none;margin-top:10px;border:0;border-radius:999px;padding:9px 14px;background:#065f46;color:#fff;font-size:12px;cursor:pointer;font-family:inherit;font-weight:600}
+.pay-success{display:none;color:#065f46}
+.pay-success-icon{width:58px;height:58px;margin:0 auto 12px;border-radius:999px;background:#10b981;color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 14px 30px rgba(16,185,129,.28)}
+.pay-success-title{font-size:20px;font-weight:800;letter-spacing:-.03em;color:#064e3b;margin-bottom:5px}
+.pay-success-text{font-size:13px;line-height:1.6;color:#047857;max-width:340px;margin:0 auto}
+.pay-confirm-btn{display:none;width:100%;margin-top:16px;border:0;border-radius:999px;padding:12px 16px;background:#064e3b;color:#fff;font-size:14px;cursor:pointer;font-family:inherit;font-weight:700;box-shadow:0 12px 28px rgba(6,78,59,.2)}
+.pay-confirm-btn:hover{opacity:.9}
 .pay-link{display:inline-flex;align-items:center;gap:6px;margin-top:12px;font-size:13px;color:var(--text)}
 .pay-link.payment-cta{width:100%;justify-content:center;text-decoration:none;border:.5px solid var(--border2);border-radius:999px;padding:11px 14px;background:var(--text);color:var(--bg);font-weight:600}
 .payment-frame-wrap{margin-top:12px;border:1px solid var(--border);border-radius:18px;background:#fff;overflow:auto;box-shadow:0 12px 30px rgba(0,0,0,.08);-webkit-overflow-scrolling:touch}
@@ -503,7 +509,7 @@ function collapseFontDetails(){
       <a class="pay-link" id="payment-link" href="#" target="_blank" rel="noopener" style="display:none"><i class="ti ti-external-link"></i><span>Open payment page</span></a>
     </div>
     <button class="pay-btn" id="pay-btn" onclick="doPayment()"><i class="ti ti-credit-card" style="margin-right:6px"></i>&#3626;&#3619;&#3657;&#3634;&#3591; QR &#3614;&#3619;&#3657;&#3629;&#3617;&#3648;&#3614;&#3618;&#3660;</button>
-    <button onclick="closePay()" style="width:100%;margin-top:10px;padding:11px;background:none;border:.5px solid var(--border2);border-radius:999px;font-size:14px;cursor:pointer;font-family:inherit;color:var(--text)">&#3618;&#3585;&#3648;&#3621;&#3636;&#3585;</button>
+    <button id="pay-cancel-btn" onclick="closePay()" style="width:100%;margin-top:10px;padding:11px;background:none;border:.5px solid var(--border2);border-radius:999px;font-size:14px;cursor:pointer;font-family:inherit;color:var(--text)">&#3618;&#3585;&#3648;&#3621;&#3636;&#3585;</button>
   </div>
 </div>
 
@@ -1249,6 +1255,7 @@ function resetPaymentUi(){
   if(paymentSuccessConfirmTimer){ clearTimeout(paymentSuccessConfirmTimer); paymentSuccessConfirmTimer=null; }
   if(paymentPollTimer){ clearInterval(paymentPollTimer); paymentPollTimer=null; }
   document.getElementById('payment-result').classList.remove('open');
+  document.getElementById('payment-result').classList.remove('paid-result');
   document.getElementById('payment-qr-box').style.display='none';
   document.getElementById('payment-qr-image').src='';
   document.getElementById('payment-qr-save').style.display='none';
@@ -1264,6 +1271,7 @@ function resetPaymentUi(){
   document.getElementById('payment-success-btn').style.display='none';
   document.getElementById('payment-link').style.display='none';
   document.getElementById('payment-link').href='#';
+  document.getElementById('pay-cancel-btn').style.display='block';
   const payBtn=document.getElementById('pay-btn');
   payBtn.disabled=false;
   payBtn.style.display='block';
@@ -1305,6 +1313,8 @@ function renderPaymentResult(raw){
   const frameNote=document.getElementById('payment-frame-note');
   const link=document.getElementById('payment-link');
   const debug=document.getElementById('payment-debug');
+  const payBtn=document.getElementById('pay-btn');
+  const cancelBtn=document.getElementById('pay-cancel-btn');
   setPaymentStatus(
     data.status,
     data.status==='paid'?'Paid':
@@ -1317,21 +1327,37 @@ function renderPaymentResult(raw){
     : 'Scan the PromptPay QR or continue to the payment page. We will update the order status automatically after payment.');
   if(isPaid || hadPaidState){
     if(paymentSuccessConfirmTimer){ clearTimeout(paymentSuccessConfirmTimer); paymentSuccessConfirmTimer=null; }
+    result.classList.add('open','paid-result');
+    noteEl.style.display='none';
     successEl.style.display='block';
-    successEl.textContent='ชำระเงินสำเร็จแล้ว เรียบร้อย! คลิกไปดูไฟล์ที่ครอบครองจากเมนู “สินค้าของฉัน” ได้เลย';
+    successEl.innerHTML='<div class="pay-success-icon"><i class="ti ti-check" style="font-size:30px"></i></div><div class="pay-success-title">ชำระเงินสำเร็จแล้ว</div><div class="pay-success-text">ระบบบันทึกคำสั่งซื้อเรียบร้อยแล้ว กดตกลงเพื่อไปดูไฟล์ที่ซื้อไว้ได้ทันที</div>';
     successBtn.style.display='none';
-    const payBtn=document.getElementById('pay-btn');
     payBtn.disabled=true;
     payBtn.style.display='none';
+    cancelBtn.style.display='none';
+    document.getElementById('payment-qr-box').style.display='none';
+    document.getElementById('payment-qr-save').style.display='none';
+    code.style.display='none';
+    frameWrap.style.display='none';
+    frame.src='about:blank';
+    frameNote.style.display='none';
+    link.classList.remove('payment-cta');
+    link.style.display='none';
+    debug.style.display='none';
+    debug.textContent='';
     paymentSuccessConfirmTimer=setTimeout(()=>{ 
       if(currentPayment && isPaidLikeStatus(currentPayment.status)){ 
-        successBtn.style.display='inline-block';
+        successBtn.style.display='block';
       }
     }, 1000);
+    return;
   }else{
+    result.classList.remove('paid-result');
+    noteEl.style.display='block';
     successEl.style.display='none';
-    successEl.textContent='';
+    successEl.innerHTML='';
     successBtn.style.display='none';
+    cancelBtn.style.display='block';
     if(paymentSuccessConfirmTimer){ clearTimeout(paymentSuccessConfirmTimer); paymentSuccessConfirmTimer=null; }
   }
   if(data.qrCodeUrl){
@@ -1382,7 +1408,6 @@ function renderPaymentResult(raw){
     debug.textContent='';
   }
   result.classList.add('open');
-  const payBtn=document.getElementById('pay-btn');
   if(payBtn && !isPaid){
     payBtn.disabled=true;
     payBtn.style.display='block';
