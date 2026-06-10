@@ -227,7 +227,19 @@ nav{position:sticky;top:0;z-index:100;background:var(--bg);border-bottom:.5px so
 .pay-btn:hover{opacity:.8}
 .pay-btn:disabled{opacity:.4;cursor:not-allowed}
 .admin-modal{max-width:960px}
+.admin-summary-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:16px 0}
+.admin-stat-card{background:var(--bg2);border:.5px solid var(--border);border-radius:14px;padding:13px}
+.admin-stat-label{font-size:11px;color:var(--muted);margin-bottom:5px}
+.admin-stat-value{font-size:20px;font-weight:700;letter-spacing:-.03em}
+.admin-stat-sub{font-size:11px;color:var(--hint);margin-top:3px}
+.admin-section-title{font-size:13px;font-weight:700;margin:18px 0 8px}
+.admin-daily-list{display:grid;grid-template-columns:repeat(7,1fr);gap:8px}
+.admin-daily-item{background:var(--bg);border:.5px solid var(--border);border-radius:12px;padding:10px}
+.admin-daily-date{font-size:11px;color:var(--muted);margin-bottom:4px}
+.admin-daily-value{font-size:14px;font-weight:700}
+.admin-daily-sub{font-size:10px;color:var(--hint);margin-top:2px}
 .admin-table-wrap{overflow:auto;border:.5px solid var(--border);border-radius:14px}
+@media(max-width:760px){.admin-summary-grid{grid-template-columns:repeat(2,1fr)}.admin-daily-list{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:720px){
   .auth-modal{align-items:flex-start;overflow-y:auto;padding:10px 10px calc(96px + env(safe-area-inset-bottom))}
   .pay-box{width:100%;max-width:none;margin:8px 0 120px;padding:20px 16px;border-radius:18px}
@@ -449,8 +461,9 @@ function collapseFontDetails(){
 <div class="modal-overlay" id="admin-overlay" onclick="closeAdminOut(event)">
   <div class="modal admin-modal">
     <div class="modal-handle"></div>
-    <h2>ข้อมูลลูกค้า</h2>
-    <p class="admin-note">ตารางนี้ดึงจาก `orders` และ `payments` ล่าสุดเพื่อให้ดูชื่ออีเมล, ยอดชำระ, สถานะคำสั่งซื้อ และเลขอ้างอิงได้จากหลังบ้านเดียวกัน</p>
+    <h2>หลังบ้าน TYPEHAUS</h2>
+    <p class="admin-note">ดูยอดขายรวม ยอดขายรายวัน จำนวนผู้เข้าชม และรายการออเดอร์ล่าสุด</p>
+    <div id="admin-summary" class="admin-empty">Loading summary...</div>
     <div id="admin-list" class="admin-empty">Loading...</div>
   </div>
 </div>
@@ -563,6 +576,30 @@ async function doLogin(){
     showMsg('OK!','success');
     setTimeout(closeAuth,800);
   }
+}
+
+function getVisitorId(){
+  const key='typehaus_visitor_id';
+  let id='';
+  try{ id=localStorage.getItem(key)||''; }catch(_){}
+  if(!id){
+    id=`v_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    try{ localStorage.setItem(key,id); }catch(_){}
+  }
+  return id;
+}
+async function trackVisit(){
+  try{
+    const visitKey=`typehaus_visit_sent_${new Date().toISOString().slice(0,10)}`;
+    if(sessionStorage.getItem(visitKey)) return;
+    sessionStorage.setItem(visitKey,'1');
+    await sb.functions.invoke('track-visit',{body:{
+      visitorId:getVisitorId(),
+      path:location.pathname,
+      referrer:document.referrer||'',
+      userAgent:navigator.userAgent||''
+    }});
+  }catch(_){}
 }
 async function doReg(){
   const email=document.getElementById('reg-email').value;
@@ -1401,13 +1438,32 @@ function adminFontSummary(fontIds){
   if(!Array.isArray(fontIds) || !fontIds.length) return '-';
   return fontIds.map(id=>fonts.find(font=>font.id===id)?.name || `#${id}`).join(', ');
 }
+function money(value){
+  return `฿${Number(value||0).toLocaleString()}`;
+}
+function renderAdminSummary(summary={}){
+  const sales=summary.sales||{};
+  const visits=summary.visits||{};
+  const daily=Array.isArray(summary.daily)?summary.daily:[];
+  return `<div class="admin-summary-grid">
+    <div class="admin-stat-card"><div class="admin-stat-label">ยอดขายรวม</div><div class="admin-stat-value">${money(sales.total)}</div><div class="admin-stat-sub">${sales.total_orders||0} orders</div></div>
+    <div class="admin-stat-card"><div class="admin-stat-label">ยอดขายวันนี้</div><div class="admin-stat-value">${money(sales.today)}</div><div class="admin-stat-sub">${sales.today_orders||0} orders</div></div>
+    <div class="admin-stat-card"><div class="admin-stat-label">ยอดขายเมื่อวาน</div><div class="admin-stat-value">${money(sales.yesterday)}</div><div class="admin-stat-sub">${sales.yesterday_orders||0} orders</div></div>
+    <div class="admin-stat-card"><div class="admin-stat-label">ผู้เข้าชมวันนี้</div><div class="admin-stat-value">${visits.today||0}</div><div class="admin-stat-sub">รวม ${visits.total||0} visits</div></div>
+  </div>
+  <div class="admin-section-title">ยอดขาย / ผู้เข้าชม 7 วันล่าสุด</div>
+  <div class="admin-daily-list">${daily.map(day=>`<div class="admin-daily-item"><div class="admin-daily-date">${day.date}</div><div class="admin-daily-value">${money(day.sales)}</div><div class="admin-daily-sub">${day.orders||0} orders · ${day.visits||0} visits</div></div>`).join('')}</div>`;
+}
 
 async function openAdmin(){
   document.getElementById('admin-overlay').classList.add('open');
   const list=document.getElementById('admin-list');
+  const summaryEl=document.getElementById('admin-summary');
   list.textContent='Loading...';
+  summaryEl.textContent='Loading summary...';
   const {data,error}=await sb.functions.invoke('admin-overview');
-  if(error || !data?.rows){ list.innerHTML=`<div class="admin-empty">โหลดข้อมูลลูกค้าไม่สำเร็จ${error?.message?`<br><small>${error.message}</small>`:''}</div>`; return; }
+  if(error || !data?.rows){ summaryEl.innerHTML=''; list.innerHTML=`<div class="admin-empty">โหลดข้อมูลลูกค้าไม่สำเร็จ${error?.message?`<br><small>${error.message}</small>`:''}</div>`; return; }
+  summaryEl.innerHTML=renderAdminSummary(data.summary||{});
   if(!data.rows.length){ list.innerHTML='<div class="admin-empty">ยังไม่มีข้อมูลลูกค้า</div>'; return; }
   list.innerHTML=`<div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>เวลา</th><th>อีเมล</th><th>ฟอนต์</th><th>Order</th><th>Order Status</th><th>Payment Status</th><th>Amount</th><th>Payment ID</th><th>Reference</th></tr></thead><tbody>${
     data.rows.map(row=>`<tr>${
@@ -1434,6 +1490,7 @@ async function openAdmin(){
 
 render();
 openAuthFromUrlState();
+trackVisit();
 </script>
 </body>
 </html>
