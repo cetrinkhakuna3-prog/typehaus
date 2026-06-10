@@ -149,9 +149,10 @@ nav{position:sticky;top:0;z-index:100;background:var(--bg);border-bottom:.5px so
 .purchase-sheet{transform-origin:center bottom;animation:purchaseSheetIn .34s cubic-bezier(.18,.92,.22,1) both;box-shadow:0 -18px 60px rgba(0,0,0,.18)}
 .purchase-sheet h2{letter-spacing:-.02em}
 .purchase-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}
-.purchase-head h2{margin-bottom:0;white-space:nowrap}
+.purchase-sheet .purchase-head h2{margin:0;white-space:nowrap;line-height:1.1}
 .purchase-title-block{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-width:0}
-.account-license-code{display:inline-flex;align-items:center;gap:5px;border:.5px solid var(--border);background:var(--bg2);color:var(--muted);border-radius:999px;padding:4px 8px;font-size:10px;line-height:1;white-space:nowrap}
+.account-license-code{display:inline-flex;align-items:center;gap:5px;min-height:20px;border:.5px solid var(--border);background:var(--bg2);color:var(--muted);border-radius:999px;padding:0 8px;font-size:10px;line-height:1;white-space:nowrap}
+.account-license-code span{display:inline-flex;align-items:center;line-height:1}
 .account-license-code .value{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--text);font-weight:700;letter-spacing:0}
 .central-license-btn{border:.5px solid var(--border2);background:var(--bg);color:var(--text);border-radius:999px;padding:7px 12px;font-size:12px;font-family:inherit;cursor:pointer;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;flex-shrink:0}
 .central-license-btn:hover{background:var(--bg2)}
@@ -172,7 +173,7 @@ nav{position:sticky;top:0;z-index:100;background:var(--bg);border-bottom:.5px so
 @keyframes purchaseFade{from{opacity:0}to{opacity:1}}
 @keyframes purchaseSheetIn{from{opacity:.4;transform:translateY(46px) scale(.985)}to{opacity:1;transform:translateY(0) scale(1)}}
 @media(min-width:760px){.purchase-sheet{border-radius:24px;max-height:72vh;margin-bottom:24px;padding:24px 28px 34px}.license-doc-modal{border-radius:24px;max-height:82vh;margin-bottom:24px;padding:24px 28px 34px}}
-@media(max-width:520px){.purchase-head{align-items:flex-start;gap:8px;flex-wrap:wrap}.purchase-title-block{width:100%}.account-license-code{font-size:9px}.central-license-btn{padding:7px 10px;font-size:11px}.license-doc-head{flex-direction:column}.license-doc-title{font-size:16px}.license-doc-code-card{align-items:flex-start;flex-direction:column}.license-doc-bottom{justify-content:stretch}.license-doc-done{width:100%}}
+@media(max-width:520px){.purchase-head{align-items:center;gap:8px;flex-wrap:wrap}.purchase-title-block{align-items:center;width:100%}.account-license-code{font-size:9px}.central-license-btn{padding:7px 10px;font-size:11px}.license-doc-head{flex-direction:column}.license-doc-title{font-size:16px}.license-doc-code-card{align-items:flex-start;flex-direction:column}.license-doc-bottom{justify-content:stretch}.license-doc-done{width:100%}}
 .modal-handle{width:36px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 22px}
 .modal h2{font-size:16px;font-weight:600;margin-bottom:18px}
 .modal-item{display:flex;align-items:center;justify-content:space-between;padding:13px 0;border-bottom:.5px solid var(--border)}
