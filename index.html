@@ -15,8 +15,7 @@
 @font-face{font-family:"MiPie Custom";src:url("./assets/fonts/MiPie.ttf") format("truetype");font-display:swap}
 @font-face{font-family:"MiPie Thin Custom";src:url("./assets/fonts/MiPieThin.ttf") format("truetype");font-display:swap}
 @font-face{font-family:"MiPie Bold Custom";src:url("./assets/fonts/MiPieBold.ttf") format("truetype");font-display:swap}
-@font-face{font-family:"Naruke Custom";src:url("./assets/fonts/Naruke.ttf") format("truetype");font-display:swap}
-@font-face{font-family:"Lunari Custom";src:url("./assets/fonts/Lunari.ttf") format("truetype");font-display:swap}
+@font-face{font-family:"Puppy Custom";src:url("./assets/fonts/Puppy.ttf") format("truetype");font-display:swap}
 :root{--bg:#fff;--bg2:#f5f5f3;--text:#111110;--muted:#6b6a67;--hint:#a8a7a3;--border:rgba(0,0,0,.1);--border2:rgba(0,0,0,.2);--r:8px;--rl:16px}
 @media(prefers-color-scheme:dark){:root{--bg:#111110;--bg2:#1a1a18;--text:#f0efe9;--muted:#8a8a86;--hint:#555552;--border:rgba(255,255,255,.1);--border2:rgba(255,255,255,.2)}}
 body{font-family:"Space Grotesk",sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding-bottom:88px}
@@ -490,31 +489,26 @@ const ADMIN_EMAILS = new Set((window.AUTH_CONFIG?.adminEmails || '').split(',').
 
 // ---- FONTS DATA ----
 const fonts = [
-  {id:1, name:'Misaimai',   style:'Thai - Fun - Handwritten', price:1, tag:'BESTSELLER', family:'"MiSaimai Custom", cursive', files:[
+  {id:1, name:'Misaimai',   style:'Thai - Fun - Handwritten', price:1, tag:'BESTSELLER', family:'MiSaimai Custom, cursive', files:[
     'MiSaimai.ttf'
   ]},
   {id:2, name:'Mimonju',    style:'Thai - Minimal - Clean',   price:1, tag:'POPULAR',    family:'Georgia,serif', files:[]},
-  {id:3, name:'Bakery',     style:'Thai - Cute - Warm',       price:1, tag:'NEW',        family:'"Bakery Custom", "Cormorant Garamond", serif', files:[
+  {id:3, name:'Bakery',     style:'Thai - Cute - Warm',       price:1, tag:'NEW',        family:'Bakery Custom, Cormorant Garamond, serif', files:[
     'Bakery.ttf'
   ]},
   {id:4, name:'Satajun',    style:'Thai - Review - Readable', price:1, tag:'TRENDING',   family:'"Outfit",sans-serif', files:[]},
-  {id:5, name:'MiPie',      style:'Thai - Model - Premium',   price:1, tag:'PREMIUM',    family:'"MiPie Custom", "DM Serif Display", serif', files:[
+  {id:5, name:'MiPie',      style:'Thai - Model - Premium',   price:1, tag:'PREMIUM',    family:'MiPie Custom, DM Serif Display, serif', files:[
     'MiPie.ttf',
     'MiPieBold.ttf',
     'MiPieThin.ttf',
     'MiPie.pdf'
   ]},
-  {id:6, name:'Lunari',     style:'Thai - Friendly - Commercial', price:1, tag:'ELEGANT', family:'"Lunari Custom", cursive', files:[
-    'Lunari.ttf',
-    'LunariBold.ttf',
-    'LunariDot.ttf',
-    'LunariThin.ttf',
-    'Lunari-License.jpg'
-  ]},
-  {id:7, name:'Naruke',     style:'Thai - Cute - Planner',    price:1, tag:'NEW',        family:'"Naruke Custom", cursive', files:[
-    'Naruke.ttf',
-    'NarukeBold.ttf',
-    'NarukeThin.ttf'
+  {id:6, name:'Puppy',      style:'Thai - Friendly - Commercial', price:1, tag:'ELEGANT', family:'Puppy Custom, cursive', secure:true, files:[
+    'Puppy.ttf',
+    'PuppyBold.ttf',
+    'PuppyDot.ttf',
+    'PuppyThin.ttf',
+    'Puppy-License.jpg'
   ]},
 ];
 const LICENSE_OPTIONS = [
@@ -774,6 +768,30 @@ async function hydrateOwnedLicenses(orders,licenses){
 function renderLicenseChip(label){
   return label?`<span class="license-chip"><i class="ti ti-certificate" style="font-size:11px"></i>${label}</span>`:'';
 }
+function renderDownloadControl(font,file,klass='font-file-link'){
+  const safeFile=escapeHtml(file);
+  if(font.secure){
+    return `<button class="${klass}" type="button" onclick="event.stopPropagation();downloadFontFile(${font.id},'${safeFile}')"><i class="ti ti-download" style="font-size:14px"></i><span>${safeFile}</span></button>`;
+  }
+  return `<a class="${klass}" onclick="event.stopPropagation()" href="./assets/fonts/${safeFile}" download><i class="ti ti-download" style="font-size:14px"></i><span>${safeFile}</span></a>`;
+}
+async function downloadFontFile(fontId,file){
+  if(!currentUser){ openAuth(); return; }
+  try{
+    const {data,error}=await sb.functions.invoke('download-font',{body:{fontId,file}});
+    if(error) throw error;
+    if(!data?.signedUrl) throw new Error('Download link not ready');
+    const a=document.createElement('a');
+    a.href=data.signedUrl;
+    a.download=data.file||file;
+    a.rel='noopener';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  }catch(e){
+    alert(e?.message||'ไม่สามารถดาวน์โหลดไฟล์ได้');
+  }
+}
 function escapeHtml(value){
   return String(value||'').replace(/[&<>"']/g, char=>({
     '&':'&amp;',
@@ -925,7 +943,7 @@ async function openPurchases(){
     const d=new Date(p.created_at).toLocaleDateString('th-TH');
     const licenseLabel=purchaseLicenses[p.font_id]||'รูปแบบไม่ระบุ';
     const licenseChip=renderLicenseChip(licenseLabel);
-    const links=(f.files||[]).map(file=>`<a class="dl-btn" onclick="event.stopPropagation()" href="./assets/fonts/${file}" download><i class="ti ti-download" style="font-size:14px"></i> ${file}</a>`).join('');
+    const links=(f.files||[]).map(file=>renderDownloadControl(f,file,'dl-btn')).join('');
     const receiptBtn=`<button class="dl-btn receipt-btn" type="button" onclick="event.stopPropagation();openReceipt(${p.font_id},'${licenseLabel}', '${p.created_at}', '${p.order_id||''}')"><i class="ti ti-receipt" style="font-size:14px"></i> ใบเสร็จ</button>`;
     return `<div class="purchase-item"><div><div class="purchase-item-info purchase-item-title"><span>${f.name}</span>${licenseChip}</div><div class="purchase-item-date">${d}</div></div><div class="purchase-file-links">${links||'<span class="font-file-empty">ไฟล์ฟอนต์จะถูกเพิ่มเร็ว ๆ นี้</span>'}${receiptBtn}</div></div>`;
   }).join('');
@@ -952,7 +970,7 @@ function render(){
     const selectedLicenseLabel=getLicense(selectedLicense)?.label||'เลือกรูปแบบ';
     const actionLabel=cartItem?'<i class="ti ti-check" style="font-size:14px"></i> Added':'<i class="ti ti-plus" style="font-size:14px"></i> Add';
     const links=owned
-      ? (f.files||[]).map(file=>`<a class="font-file-link" href="./assets/fonts/${file}" download><i class="ti ti-download"></i><span>${file}</span></a>`).join('')+ownedLicenseChip
+      ? (f.files||[]).map(file=>renderDownloadControl(f,file,'font-file-link')).join('')+ownedLicenseChip
       : '';
     const empty=owned
       ? '<span class="font-file-empty">ไฟล์ฟอนต์จะถูกเพิ่มเร็ว ๆ นี้</span>'
