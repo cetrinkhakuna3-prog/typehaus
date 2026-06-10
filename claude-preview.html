@@ -730,7 +730,7 @@ async function openPurchases(){
     const f=fonts.find(x=>x.id===p.font_id)||{name:'Font #'+p.font_id};
     const d=new Date(p.created_at).toLocaleDateString('th-TH');
     const licenseChip=renderLicenseChip(purchaseLicenses[p.font_id]||'รูปแบบไม่ระบุ');
-    const links=(f.files||[]).map(file=>`<a class="dl-btn" href="./assets/fonts/${file}" download><i class="ti ti-download" style="font-size:14px"></i> ${file}</a>`).join('');
+    const links=(f.files||[]).map(file=>`<a class="dl-btn" onclick="event.stopPropagation()" href="./assets/fonts/${file}" download><i class="ti ti-download" style="font-size:14px"></i> ${file}</a>`).join('');
     return `<div class="purchase-item"><div><div class="purchase-item-info purchase-item-title"><span>${f.name}</span>${licenseChip}</div><div class="purchase-item-date">${d}</div></div><div class="purchase-file-links">${links||'<span class="font-file-empty">ไฟล์ฟอนต์จะถูกเพิ่มเร็ว ๆ นี้</span>'}</div></div>`;
   }).join('');
 }
