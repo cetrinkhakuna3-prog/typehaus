@@ -186,6 +186,8 @@ nav{position:sticky;top:0;z-index:100;background:var(--bg);border-bottom:.5px so
 .purchase-file-links{display:flex;flex-wrap:wrap;gap:6px}
 .dl-btn{background:var(--bg2);border:.5px solid var(--border);border-radius:999px;padding:5px 11px;font-size:12px;cursor:pointer;color:var(--text);font-family:inherit;display:inline-flex;align-items:center;gap:5px;transition:background .15s;text-decoration:none;white-space:nowrap}
 .dl-btn:hover{background:var(--bg2)}
+.receipt-btn{border-color:var(--border2);background:var(--bg);font-weight:500}
+.receipt-btn:hover{background:var(--bg2)}
 .pay-box{background:var(--bg);border-radius:20px;padding:28px 24px;width:100%;max-width:560px}
 .pay-summary{background:var(--bg2);border-radius:var(--rl);padding:16px;margin-bottom:20px}
 .pay-item{display:flex;justify-content:space-between;font-size:14px;padding:4px 0}
@@ -659,6 +661,55 @@ async function hydrateOwnedLicenses(orders,licenses){
 function renderLicenseChip(label){
   return label?`<span class="license-chip"><i class="ti ti-certificate" style="font-size:11px"></i>${label}</span>`:'';
 }
+function escapeHtml(value){
+  return String(value||'').replace(/[&<>"']/g, char=>({
+    '&':'&amp;',
+    '<':'&lt;',
+    '>':'&gt;',
+    '"':'&quot;',
+    "'":'&#39;'
+  }[char]));
+}
+function buildReceiptNo(fontId,dateValue){
+  const date=new Date(dateValue||Date.now());
+  const y=date.getFullYear();
+  const m=String(date.getMonth()+1).padStart(2,'0');
+  const d=String(date.getDate()).padStart(2,'0');
+  return `TH-RC-${y}${m}${d}-${String(fontId).padStart(3,'0')}`;
+}
+function openReceipt(fontId,licenseLabel,dateValue){
+  const font=fonts.find(f=>f.id===Number(fontId));
+  if(!font) return;
+  const issuedAt=new Date(dateValue||Date.now());
+  const receiptNo=buildReceiptNo(font.id,issuedAt);
+  const customer=currentUser?.email||'-';
+  const license=licenseLabel||'รูปแบบไม่ระบุ';
+  const receiptHtml=`<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${receiptNo}</title><style>
+    *{box-sizing:border-box}body{margin:0;background:#f5f5f3;color:#111110;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;padding:24px}.receipt{max-width:760px;margin:0 auto;background:#fff;border:1px solid rgba(0,0,0,.12);border-radius:22px;padding:34px}.top{display:flex;justify-content:space-between;gap:18px;border-bottom:1px solid rgba(0,0,0,.12);padding-bottom:18px;margin-bottom:22px}.brand{font-weight:800;letter-spacing:.16em;font-size:18px}.muted{color:#6b6a67;font-size:13px;line-height:1.55}.title{font-size:28px;font-weight:800;margin:0 0 6px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:18px 0}.box{background:#f5f5f3;border-radius:14px;padding:14px}.label{font-size:11px;color:#777;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px}.value{font-size:14px;font-weight:650}.items{width:100%;border-collapse:collapse;margin-top:18px}.items th{text-align:left;font-size:12px;color:#777;border-bottom:1px solid rgba(0,0,0,.12);padding:10px 0}.items td{padding:14px 0;border-bottom:1px solid rgba(0,0,0,.08);vertical-align:top}.total{display:flex;justify-content:space-between;align-items:center;margin-top:18px;padding:16px;border-radius:16px;background:#111110;color:#fff;font-size:18px;font-weight:800}.note{margin-top:18px;padding:14px;border-radius:14px;background:#fff7ed;color:#7c2d12;font-size:12px;line-height:1.55}.actions{max-width:760px;margin:16px auto 0;display:flex;gap:10px}.btn{flex:1;border:0;border-radius:999px;padding:13px 18px;font-weight:700;cursor:pointer}.primary{background:#111110;color:#fff}.secondary{background:#fff;border:1px solid rgba(0,0,0,.14)}@media print{body{background:#fff;padding:0}.receipt{border:0;border-radius:0}.actions{display:none}}@media(max-width:640px){body{padding:12px}.receipt{padding:22px}.top,.grid{grid-template-columns:1fr;display:grid}.title{font-size:24px}}
+  </style></head><body><main class="receipt">
+    <div class="top"><div><div class="brand">TYPEHAUS</div><div class="muted">Digital Font Store</div></div><div style="text-align:right"><h1 class="title">ใบเสร็จรับเงิน</h1><div class="muted">Receipt / ไม่ใช่ใบกำกับภาษี</div></div></div>
+    <div class="grid"><div class="box"><div class="label">Receipt No.</div><div class="value">${escapeHtml(receiptNo)}</div></div><div class="box"><div class="label">Issued Date</div><div class="value">${issuedAt.toLocaleDateString('th-TH')}</div></div><div class="box"><div class="label">Customer</div><div class="value">${escapeHtml(customer)}</div></div><div class="box"><div class="label">Payment</div><div class="value">PromptPay / GBPrimePay</div></div></div>
+    <table class="items"><thead><tr><th>สินค้า</th><th>รูปแบบ</th><th style="text-align:right">ราคา</th></tr></thead><tbody><tr><td><strong>${escapeHtml(font.name)}</strong><br><span class="muted">ไฟล์ฟอนต์ดิจิทัล</span></td><td>${escapeHtml(license)}</td><td style="text-align:right">฿${Number(font.price||0).toLocaleString()}</td></tr></tbody></table>
+    <div class="total"><span>Total Paid</span><span>฿${Number(font.price||0).toLocaleString()}</span></div>
+    <div class="note">หมายเหตุ: ผู้ขายยังไม่ได้จดทะเบียนภาษีมูลค่าเพิ่ม ราคานี้ไม่รวม VAT และเอกสารนี้เป็นใบเสร็จรับเงินธรรมดา ไม่ใช่ใบกำกับภาษี</div>
+  </main><div class="actions"><button class="btn secondary" onclick="window.close()">ปิด</button><button class="btn primary" onclick="window.print()">บันทึก / พิมพ์ใบเสร็จ</button></div></body></html>`;
+  const win=window.open('','_blank','noopener,noreferrer');
+  if(win){
+    win.document.open();
+    win.document.write(receiptHtml);
+    win.document.close();
+  }else{
+    const blob=new Blob([receiptHtml],{type:'text/html;charset=utf-8'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url;
+    a.download=`${receiptNo}.html`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),1000);
+  }
+}
 function orderLicenseStoreKey(orderId){
   return `typehaus_order_licenses_${orderId}`;
 }
@@ -729,9 +780,11 @@ async function openPurchases(){
   el.innerHTML=rows.map(p=>{
     const f=fonts.find(x=>x.id===p.font_id)||{name:'Font #'+p.font_id};
     const d=new Date(p.created_at).toLocaleDateString('th-TH');
-    const licenseChip=renderLicenseChip(purchaseLicenses[p.font_id]||'รูปแบบไม่ระบุ');
+    const licenseLabel=purchaseLicenses[p.font_id]||'รูปแบบไม่ระบุ';
+    const licenseChip=renderLicenseChip(licenseLabel);
     const links=(f.files||[]).map(file=>`<a class="dl-btn" onclick="event.stopPropagation()" href="./assets/fonts/${file}" download><i class="ti ti-download" style="font-size:14px"></i> ${file}</a>`).join('');
-    return `<div class="purchase-item"><div><div class="purchase-item-info purchase-item-title"><span>${f.name}</span>${licenseChip}</div><div class="purchase-item-date">${d}</div></div><div class="purchase-file-links">${links||'<span class="font-file-empty">ไฟล์ฟอนต์จะถูกเพิ่มเร็ว ๆ นี้</span>'}</div></div>`;
+    const receiptBtn=`<button class="dl-btn receipt-btn" type="button" onclick="event.stopPropagation();openReceipt(${p.font_id},'${licenseLabel}', '${p.created_at}')"><i class="ti ti-receipt" style="font-size:14px"></i> ใบเสร็จ</button>`;
+    return `<div class="purchase-item"><div><div class="purchase-item-info purchase-item-title"><span>${f.name}</span>${licenseChip}</div><div class="purchase-item-date">${d}</div></div><div class="purchase-file-links">${links||'<span class="font-file-empty">ไฟล์ฟอนต์จะถูกเพิ่มเร็ว ๆ นี้</span>'}${receiptBtn}</div></div>`;
   }).join('');
 }
 
