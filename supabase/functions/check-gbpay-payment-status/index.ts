@@ -13,7 +13,10 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const GB_API_BASE =
   Deno.env.get("GB_API_BASE") ?? "https://api.gbprimepay.com";
-const GB_SECRET_KEY = Deno.env.get("GB_SECRET_KEY") ?? "";
+const GB_SECRET_KEY = Deno.env.get("GB_SECRET_KEY") ??
+  Deno.env.get("GBPRIMEPAY_SECRET_KEY") ??
+  Deno.env.get("GBPAY_SECRET_KEY") ??
+  "";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 
