@@ -192,6 +192,8 @@ nav{position:sticky;top:0;z-index:100;background:var(--bg);border-bottom:.5px so
 .form-input:focus{border-color:var(--border2)}
 .auth-submit{width:100%;padding:12px;background:var(--text);color:var(--bg);border:none;border-radius:999px;font-size:14px;font-weight:500;cursor:pointer;font-family:inherit;margin-top:6px;transition:opacity .15s}
 .auth-submit:hover{opacity:.8}
+.auth-secondary{width:100%;padding:11px;background:none;border:.5px solid var(--border2);border-radius:999px;font-size:14px;cursor:pointer;font-family:inherit;color:var(--text);margin-top:10px;transition:background .15s}
+.auth-secondary:hover{background:var(--bg2)}
 .auth-link{text-align:center;margin-top:14px;font-size:13px;color:var(--muted)}
 .auth-link a{color:var(--text);cursor:pointer;text-decoration:underline}
 .auth-close{position:absolute;top:16px;right:16px;background:none;border:none;cursor:pointer;color:var(--muted);font-size:20px}
@@ -427,6 +429,7 @@ function collapseFontDetails(){
       <div class="form-group"><label>&#3629;&#3637;&#3648;&#3617;&#3621;</label><input class="form-input" type="email" id="reg-email" name="email" placeholder="you@email.com" autocomplete="email"/></div>
       <div class="form-group"><label>&#3619;&#3627;&#3633;&#3626;&#3612;&#3656;&#3634;&#3609;</label><input class="form-input" type="password" id="reg-pw" name="new-password" placeholder="&#3629;&#3618;&#3656;&#3634;&#3591;&#3609;&#3657;&#3629;&#3618; 6 &#3605;&#3633;&#3623;" autocomplete="new-password"/></div>
       <button class="auth-submit" type="submit">&#3626;&#3617;&#3633;&#3588;&#3619;&#3626;&#3617;&#3634;&#3594;&#3636;&#3585;</button>
+      <button class="auth-secondary" id="reg-resend-btn" type="button" style="display:none" onclick="resendConfirmationEmail()">ส่งอีเมลยืนยันอีกครั้ง</button>
     </form>
     <form id="f-reset" style="display:none" onsubmit="event.preventDefault(); doReset()">
       <p style="font-size:13px;color:var(--muted);margin-bottom:16px">&#3585;&#3619;&#3629;&#3585;&#3629;&#3637;&#3648;&#3617;&#3621;&#3648;&#3614;&#3639;&#3656;&#3629;&#3619;&#3633;&#3610;&#3621;&#3636;&#3591;&#3585;&#3660;&#3619;&#3637;&#3648;&#3595;&#3655;&#3605;&#3619;&#3627;&#3633;&#3626;&#3612;&#3656;&#3634;&#3609;</p>
@@ -608,6 +611,7 @@ let activeLicenseFontId=null;
 let previewFocusTimers={};
 let activePreviewFocusId=null;
 let lastPreviewFocusAt=0;
+let pendingConfirmationEmail='';
 
 // ---- DEFAULT IMAGES from hidden HTML tags ----
 function getDefaultSrc(id) {
@@ -690,17 +694,54 @@ async function trackVisit(){
   }catch(_){}
 }
 async function doReg(){
-  const email=document.getElementById('reg-email').value;
+  const email=document.getElementById('reg-email').value.trim().toLowerCase();
   const pw=document.getElementById('reg-pw').value;
   showMsg('','');
-  const {error}=await sb.auth.signUp({email,password:pw});
-  if(error) showMsg(error.message,'error');
-  else showMsg('Check your email to confirm','success');
+  const redirectTo=getAuthRedirectUrl();
+  const {data,error}=await sb.auth.signUp({
+    email,
+    password:pw,
+    options:{ emailRedirectTo: redirectTo }
+  });
+  if(error){
+    toggleResendConfirmation(false);
+    showMsg(error.message,'error');
+    return;
+  }
+  pendingConfirmationEmail=email;
+  if(data?.session){
+    toggleResendConfirmation(false);
+    showMsg('สมัครสำเร็จและเข้าสู่ระบบแล้ว','success');
+    setTimeout(closeAuth,800);
+    return;
+  }
+  toggleResendConfirmation(true);
+  showMsg('ส่งอีเมลยืนยันแล้ว กรุณาเช็กทั้ง Inbox และ Spam','success');
+}
+async function resendConfirmationEmail(){
+  const email=(document.getElementById('reg-email').value || pendingConfirmationEmail || '').trim().toLowerCase();
+  if(!email){
+    showMsg('กรอกอีเมลก่อน แล้วค่อยส่งเมลยืนยันอีกครั้ง','error');
+    return;
+  }
+  showMsg('','');
+  const {error}=await sb.auth.resend({
+    type:'signup',
+    email,
+    options:{ emailRedirectTo:getAuthRedirectUrl() }
+  });
+  if(error){
+    showMsg(error.message,'error');
+    return;
+  }
+  pendingConfirmationEmail=email;
+  toggleResendConfirmation(true);
+  showMsg('ส่งอีเมลยืนยันให้อีกครั้งแล้ว กรุณาเช็ก Inbox และ Spam','success');
 }
 async function doReset(){
   const email=document.getElementById('rs-email').value;
   showMsg('','');
-  const redirectTo=window.AUTH_CONFIG?.redirectTo || `${location.origin}${location.pathname}`;
+  const redirectTo=getAuthRedirectUrl();
   const {error}=await sb.auth.resetPasswordForEmail(email,{redirectTo});
   if(error) showMsg(error.message,'error');
   else showMsg('Reset link sent! Check inbox','success');
@@ -756,6 +797,13 @@ function renderUserArea(){
 function openAuth(){ document.getElementById('auth-modal').classList.add('open'); }
 function closeAuth(){ document.getElementById('auth-modal').classList.remove('open'); }
 function closeAuthOut(e){ if(e.target===document.getElementById('auth-modal')) closeAuth(); }
+function getAuthRedirectUrl(){
+  return window.AUTH_CONFIG?.redirectTo || `${location.origin}${location.pathname}`;
+}
+function toggleResendConfirmation(show){
+  const btn=document.getElementById('reg-resend-btn');
+  if(btn) btn.style.display=show?'block':'none';
+}
 function switchTab(t){
   document.getElementById('f-login').style.display=t==='login'?'block':'none';
   document.getElementById('f-reg').style.display=t==='reg'?'block':'none';
@@ -763,11 +811,12 @@ function switchTab(t){
   document.getElementById('f-recovery').style.display='none';
   document.getElementById('tab-login').className='auth-tab'+(t==='login'?' active':'');
   document.getElementById('tab-reg').className='auth-tab'+(t==='reg'?' active':'');
+  if(t!=='reg') toggleResendConfirmation(false);
   showMsg('','');
 }
 function showReset(){ document.getElementById('f-login').style.display='none'; document.getElementById('f-reset').style.display='block'; }
 function showRecovery(){ switchTab('login'); document.getElementById('f-login').style.display='none'; document.getElementById('f-recovery').style.display='block'; }
-function showLogin(){ document.getElementById('f-reset').style.display='none'; document.getElementById('f-recovery').style.display='none'; document.getElementById('f-login').style.display='block'; }
+function showLogin(){ document.getElementById('f-reset').style.display='none'; document.getElementById('f-recovery').style.display='none'; document.getElementById('f-login').style.display='block'; toggleResendConfirmation(false); }
 function showMsg(m,t){ const el=document.getElementById('auth-msg'); el.textContent=m; el.className='auth-msg'+(m?' '+t:''); }
 
 function openAuthFromUrlState(){
