@@ -499,6 +499,7 @@ let paymentSuccessConfirmTimer=null;
 let ownedFontIds=new Set();
 let ownedFontLicenses={};
 let receiptInfoByOrder={};
+const CART_STORAGE_KEY='typehaus_cart_v1';
 let lastPaidCartSignature='';
 let selectedLicenses={};
 let pendingLicenseFontId=null;
@@ -524,6 +525,33 @@ sb.auth.onAuthStateChange((event,s)=>{
   }
   refreshOwnedFonts().then(handlePaymentReturn);
 });
+
+function saveCartState(){
+  try{
+    localStorage.setItem(CART_STORAGE_KEY,JSON.stringify({
+      cart:cart.map(item=>({id:item.id,licenseKey:item.licenseKey,licenseLabel:item.licenseLabel})),
+      selectedLicenses
+    }));
+  }catch(_){}
+}
+function loadCartState(){
+  try{
+    const saved=JSON.parse(localStorage.getItem(CART_STORAGE_KEY)||'{}');
+    selectedLicenses=saved.selectedLicenses||{};
+    cart=(saved.cart||[]).map(item=>{
+      const font=fonts.find(f=>f.id===Number(item.id));
+      if(!font) return null;
+      const license=getLicense(item.licenseKey)||getLicense(selectedLicenses[font.id]);
+      if(!license) return null;
+      selectedLicenses[font.id]=license.key;
+      return {...font,licenseKey:license.key,licenseLabel:license.label};
+    }).filter(Boolean);
+  }catch(_){
+    cart=[];
+    selectedLicenses={};
+  }
+}
+loadCartState();
 
 async function doLogin(){
   const email=document.getElementById('li-email').value;
@@ -1010,6 +1038,7 @@ function selectLicense(id,key,closeAfter=false){
     cartItem.licenseKey=license.key;
     cartItem.licenseLabel=license.label;
   }
+  saveCartState();
   if(closeAfter){
     activeLicenseFontId=null;
     pendingLicenseFontId=null;
@@ -1037,6 +1066,7 @@ function toggleCart(id){
     const font=fonts.find(f=>f.id===id);
     cart.push({...font, licenseKey:license.key, licenseLabel:license.label});
   }
+  saveCartState();
   render();
   pulseCartButton();
 }
@@ -1068,7 +1098,7 @@ function openCart(){
     </div>
   </div>`).join('')+`<div class="modal-total"><span>Total</span><span>&#3647;${total.toLocaleString()}</span></div><div class="cart-actions"><button class="bar-btn secondary" onclick="closeOverlay('cart-overlay')"><i class="ti ti-arrow-left"></i>เลือกต่อ</button><button class="bar-btn primary" onclick="checkout()"><i class="ti ti-credit-card"></i>ชำระเงิน</button></div>`;
 }
-function removeCart(id){ cart=cart.filter(c=>c.id!==id); render(); openCart(); }
+function removeCart(id){ cart=cart.filter(c=>c.id!==id); saveCartState(); render(); openCart(); }
 function closeOverlay(id){ document.getElementById(id).classList.remove('open','purchase-open'); }
 function closeCartOut(e){ if(e.target===document.getElementById('cart-overlay')) closeOverlay('cart-overlay'); }
 
@@ -1292,6 +1322,7 @@ async function handlePaidPayment(){
 async function confirmPaymentSuccess(){
   if(paymentSuccessConfirmTimer){ clearTimeout(paymentSuccessConfirmTimer); paymentSuccessConfirmTimer=null; }
   cart=[];
+  saveCartState();
   await refreshOwnedFonts();
   document.getElementById('pay-modal').classList.remove('open');
   openPurchases();
