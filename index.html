@@ -1402,7 +1402,7 @@ function renderPaymentResult(raw){
   const isCardPayment = (data.paymentType||selectedPaymentMethod)==='card';
   const hasQrImage = !!data.qrCodeUrl;
   const isSmallViewport = typeof window.matchMedia==='function' && window.matchMedia('(max-width: 720px)').matches;
-  const shouldShowEmbeddedFrame = !!data.paymentUrl && (isCardPayment || (!hasQrImage && !isSmallViewport));
+  const shouldShowEmbeddedFrame = !!data.paymentUrl && (isCardPayment || !hasQrImage || !isSmallViewport);
   if(isPaid) paymentCompletedHandled=true;
   currentPayment=data;
   const result=document.getElementById('payment-result');
@@ -1504,7 +1504,9 @@ function renderPaymentResult(raw){
     frameWrap.style.display='block';
     frameNote.textContent=isCardPayment
       ? 'หน้าเบราว์เซอร์นี้จะนำคุณไปยืนยันความปลอดภัยของบัตร กรุณาเสร็จสิ้นให้ครบ'
-      : 'QR อยู่ในกรอบนี้ หากหน้าจอเล็กสามารถเลื่อนในกรอบเพื่อดู QR ให้พอดีได้';
+      : hasQrImage
+        ? 'QR อยู่ในกรอบนี้ หากหน้าจอเล็กสามารถเลื่อนในกรอบเพื่อดู QR ให้พอดีได้'
+        : 'ถ้ายังไม่เห็น QR ทันที รอสักครู่หรือเลื่อนในกรอบนี้เพื่อดูหน้า GBPay ให้ครบ';
     frameNote.style.display='block';
     link.href=data.paymentUrl;
     link.classList.add('payment-cta');
