@@ -794,22 +794,15 @@ function openReceipt(fontId,licenseLabel,dateValue,orderId=''){
     <div class="total"><span>Total Paid</span><span>฿${Number(font.price||0).toLocaleString()}</span></div>
     <div class="note">หมายเหตุ: ผู้ขายยังไม่ได้จดทะเบียนภาษีมูลค่าเพิ่ม ราคานี้ไม่รวม VAT และเอกสารนี้เป็นใบเสร็จรับเงินธรรมดา ไม่ใช่ใบกำกับภาษี</div>
   </main><div class="actions"><button class="btn secondary" onclick="window.close()">ปิด</button><button class="btn primary" onclick="window.print()">บันทึก / พิมพ์ใบเสร็จ</button></div></body></html>`;
-  const win=window.open('','_blank','noopener,noreferrer');
-  if(win){
-    win.document.open();
-    win.document.write(receiptHtml);
-    win.document.close();
-  }else{
-    const blob=new Blob([receiptHtml],{type:'text/html;charset=utf-8'});
-    const url=URL.createObjectURL(blob);
-    const a=document.createElement('a');
-    a.href=url;
-    a.download=`${receiptNo}.html`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(()=>URL.revokeObjectURL(url),1000);
-  }
+  const blob=new Blob([receiptHtml],{type:'text/html;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download=`${receiptNo}.html`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
 function orderLicenseStoreKey(orderId){
   return `typehaus_order_licenses_${orderId}`;
