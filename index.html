@@ -470,10 +470,10 @@ function collapseFontDetails(){
 
 <div class="auth-modal" id="pay-modal" onclick="closePayOut(event)">
   <div class="pay-box">
-    <h2 style="margin-bottom:6px">&#3618;&#3639;&#3609;&#3618;&#3633;&#3609;&#3585;&#3634;&#3619;&#3626;&#3633;&#3656;&#3591;&#3595;&#3639;&#3657;&#3629;</h2>
-    <p style="font-size:13px;color:var(--muted);margin-bottom:20px">&#3619;&#3632;&#3610;&#3610;&#3592;&#3632;&#3626;&#3619;&#3657;&#3634;&#3591; QR &#3614;&#3619;&#3657;&#3629;&#3617;&#3648;&#3614;&#3618;&#3660; &#3627;&#3619;&#3639;&#3629;&#3614;&#3634;&#3588;&#3640;&#3603;&#3652;&#3611;&#3618;&#3633;&#3591;&#3627;&#3609;&#3657;&#3634;&#3594;&#3635;&#3619;&#3632;&#3648;&#3591;&#3636;&#3609; GBPay</p>
+    <h2 id="pay-title" style="margin-bottom:6px">&#3618;&#3639;&#3609;&#3618;&#3633;&#3609;&#3585;&#3634;&#3619;&#3626;&#3633;&#3656;&#3591;&#3595;&#3639;&#3657;&#3629;</h2>
+    <p id="pay-subtitle" style="font-size:13px;color:var(--muted);margin-bottom:20px">&#3619;&#3632;&#3610;&#3610;&#3592;&#3632;&#3626;&#3619;&#3657;&#3634;&#3591; QR &#3614;&#3619;&#3657;&#3629;&#3617;&#3648;&#3614;&#3618;&#3660; &#3627;&#3619;&#3639;&#3629;&#3614;&#3634;&#3588;&#3640;&#3603;&#3652;&#3611;&#3618;&#3633;&#3591;&#3627;&#3609;&#3657;&#3634;&#3594;&#3635;&#3619;&#3632;&#3648;&#3591;&#3636;&#3609; GBPay</p>
     <div class="pay-summary" id="pay-summary"></div>
-    <div class="receipt-form">
+    <div class="receipt-form" id="receipt-form">
       <label class="receipt-toggle"><input type="checkbox" id="receipt-needed" onchange="toggleReceiptFields()"> ต้องการใบเสร็จ</label>
       <div class="receipt-fields" id="receipt-fields">
         <div class="receipt-type">
@@ -1271,6 +1271,10 @@ function resetPaymentUi(){
   document.getElementById('payment-success-btn').style.display='none';
   document.getElementById('payment-link').style.display='none';
   document.getElementById('payment-link').href='#';
+  document.getElementById('pay-title').style.display='block';
+  document.getElementById('pay-subtitle').style.display='block';
+  document.getElementById('pay-summary').style.display='block';
+  document.getElementById('receipt-form').style.display='block';
   document.getElementById('pay-cancel-btn').style.display='block';
   const payBtn=document.getElementById('pay-btn');
   payBtn.disabled=false;
@@ -1315,6 +1319,10 @@ function renderPaymentResult(raw){
   const debug=document.getElementById('payment-debug');
   const payBtn=document.getElementById('pay-btn');
   const cancelBtn=document.getElementById('pay-cancel-btn');
+  const payTitle=document.getElementById('pay-title');
+  const paySubtitle=document.getElementById('pay-subtitle');
+  const paySummary=document.getElementById('pay-summary');
+  const receiptForm=document.getElementById('receipt-form');
   setPaymentStatus(
     data.status,
     data.status==='paid'?'Paid':
@@ -1332,6 +1340,10 @@ function renderPaymentResult(raw){
     successEl.style.display='block';
     successEl.innerHTML='<div class="pay-success-icon"><i class="ti ti-check" style="font-size:30px"></i></div><div class="pay-success-title">ชำระเงินสำเร็จแล้ว</div><div class="pay-success-text">ระบบบันทึกคำสั่งซื้อเรียบร้อยแล้ว กดตกลงเพื่อไปดูไฟล์ที่ซื้อไว้ได้ทันที</div>';
     successBtn.style.display='none';
+    payTitle.style.display='none';
+    paySubtitle.style.display='none';
+    paySummary.style.display='none';
+    receiptForm.style.display='none';
     payBtn.disabled=true;
     payBtn.style.display='none';
     cancelBtn.style.display='none';
@@ -1357,6 +1369,10 @@ function renderPaymentResult(raw){
     successEl.style.display='none';
     successEl.innerHTML='';
     successBtn.style.display='none';
+    payTitle.style.display='block';
+    paySubtitle.style.display='block';
+    paySummary.style.display='block';
+    receiptForm.style.display='block';
     cancelBtn.style.display='block';
     if(paymentSuccessConfirmTimer){ clearTimeout(paymentSuccessConfirmTimer); paymentSuccessConfirmTimer=null; }
   }
