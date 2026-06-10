@@ -161,10 +161,13 @@ nav{position:sticky;top:0;z-index:100;background:var(--bg);border-bottom:.5px so
 .license-doc-section h3{font-size:13px;color:var(--text);margin-bottom:6px}
 .license-doc-section ul{padding-left:18px}
 .license-doc-note{border:.5px solid var(--border2);border-radius:14px;padding:13px;background:var(--bg);color:var(--text);font-size:13px;line-height:1.65}
+.license-doc-bottom{padding-top:4px;display:flex;justify-content:flex-end}
+.license-doc-done{border:none;background:var(--text);color:var(--bg);border-radius:999px;padding:11px 18px;font-size:13px;font-family:inherit;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:7px;min-width:132px}
+.license-doc-done:hover{opacity:.84}
 @keyframes purchaseFade{from{opacity:0}to{opacity:1}}
 @keyframes purchaseSheetIn{from{opacity:.4;transform:translateY(46px) scale(.985)}to{opacity:1;transform:translateY(0) scale(1)}}
 @media(min-width:760px){.purchase-sheet{border-radius:24px;max-height:72vh;margin-bottom:24px;padding:24px 28px 34px}.license-doc-modal{border-radius:24px;max-height:82vh;margin-bottom:24px;padding:24px 28px 34px}}
-@media(max-width:520px){.purchase-head{gap:8px}.central-license-btn{padding:7px 10px;font-size:11px}.license-doc-head{flex-direction:column}.license-doc-title{font-size:16px}}
+@media(max-width:520px){.purchase-head{gap:8px}.central-license-btn{padding:7px 10px;font-size:11px}.license-doc-head{flex-direction:column}.license-doc-title{font-size:16px}.license-doc-bottom{justify-content:stretch}.license-doc-done{width:100%}}
 .modal-handle{width:36px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 22px}
 .modal h2{font-size:16px;font-weight:600;margin-bottom:18px}
 .modal-item{display:flex;align-items:center;justify-content:space-between;padding:13px 0;border-bottom:.5px solid var(--border)}
@@ -454,6 +457,7 @@ function collapseFontDetails(){
       <section class="license-doc-section"><h3>ข้อห้าม</h3><ul><li>ห้ามแจกจ่าย ส่งต่อ อัปโหลด ขายต่อ ให้เช่า หรือแบ่งปันไฟล์ฟอนต์ต้นฉบับแก่ผู้อื่น</li><li>ห้ามแนบไฟล์ฟอนต์ต้นฉบับไปกับเทมเพลต ไฟล์ editable หรือระบบที่ทำให้ผู้อื่นดึงฟอนต์ไปใช้แยกได้</li><li>ห้ามดัดแปลง เปลี่ยนชื่อ แปลงไฟล์ หรือสร้างฟอนต์ใหม่จากฟอนต์เดิมเพื่อนำไปขาย แจก หรือเผยแพร่ต่อ</li><li>การฝังฟอนต์ในเว็บไซต์ แอป เกม ซอฟต์แวร์ หรือระบบที่ให้ผู้ใช้อื่นพิมพ์/สร้างงานจากฟอนต์โดยตรง ต้องได้รับอนุญาตเพิ่มเติมก่อน</li></ul></section>
       <section class="license-doc-section"><h3>การส่งงานให้ลูกค้า</h3><p>ผู้รับอนุญาตสามารถส่งมอบงานปลายทางให้ลูกค้าได้ แต่ลูกค้าไม่ได้รับสิทธิ์ครอบครองหรือใช้งานไฟล์ฟอนต์ต้นฉบับ เว้นแต่ลูกค้าจะซื้อสิทธิ์การใช้งานของตนเอง</p></section>
       <section class="license-doc-section"><h3>ข้อจำกัดความรับผิด</h3><p>ผู้อนุญาตพยายามให้ฟอนต์ใช้งานได้กับโปรแกรมทั่วไปที่รองรับฟอนต์ แต่ไม่รับประกันว่าทุกแพลตฟอร์ม ทุกเวอร์ชัน หรือทุกอุปกรณ์จะรองรับฟอนต์ในลักษณะเดียวกัน ผู้รับอนุญาตมีหน้าที่เลือกประเภทลิขสิทธิ์ให้เหมาะกับการใช้งานของตนเอง</p></section>
+      <div class="license-doc-bottom"><button class="license-doc-done" type="button" onclick="closeCentralLicense()"><i class="ti ti-check" style="font-size:15px"></i>อ่านแล้ว ปิด</button></div>
     </div>
   </div>
 </div>
