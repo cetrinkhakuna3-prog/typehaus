@@ -624,6 +624,15 @@ function extractLicenseMapFromPayment(payment){
 async function hydrateOwnedLicenses(orders,licenses){
   const orderIds=(orders||[]).map(o=>o.id).filter(Boolean);
   if(!orderIds.length) return;
+  try{
+    const {data,error}=await sb.functions.invoke('owned-licenses',{body:{}});
+    if(!error&&Array.isArray(data?.rows)){
+      data.rows.forEach(row=>{
+        const id=Number(row.font_id);
+        if(!Number.isNaN(id)&&row.license_label&&!licenses[id]) licenses[id]=row.license_label;
+      });
+    }
+  }catch(_){}
   (orders||[]).forEach(order=>{
     readOrderLicenseItems(order.id).forEach(item=>{
       const id=Number(item.fontId||item.font_id||item.id);
