@@ -101,6 +101,8 @@ nav{position:sticky;top:0;z-index:100;background:var(--bg);border-bottom:.5px so
 .font-file-link:hover{background:var(--bg)}
 .font-file-link i{font-size:12px}
 .font-file-empty{font-size:11px;color:var(--hint)}
+.license-chip{display:inline-flex;align-items:center;gap:4px;border:.5px solid var(--border);border-radius:999px;background:var(--bg2);color:var(--muted);font-size:10px;font-weight:500;padding:3px 8px;white-space:nowrap;vertical-align:middle}
+.purchase-item-title{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
 .type-input{width:100%;padding:9px 11px;background:var(--bg2);border:.5px solid var(--border);border-radius:var(--r);color:var(--text);font-size:20px;font-family:inherit;line-height:1.35;outline:none;transition:border-color .15s}
 .type-input:focus{border-color:var(--border2)}
 .type-input::placeholder{color:var(--hint)}
@@ -451,6 +453,7 @@ const LICENSE_OPTIONS = [
 let cart=[], inputCache={}, imgCache={}, currentUser=null, currentPayment=null, paymentPollTimer=null, paymentCompletedHandled=false;
 let paymentSuccessConfirmTimer=null;
 let ownedFontIds=new Set();
+let ownedFontLicenses={};
 let lastPaidCartSignature='';
 let selectedLicenses={};
 let pendingLicenseFontId=null;
@@ -578,28 +581,97 @@ function openAuthFromUrlState(){
 }
 
 // ---- PURCHASES ----
+function normalizePaymentItems(raw){
+  const pools=[
+    raw?.items,
+    raw?.clientItems,
+    raw?.raw_request?.items,
+    raw?.raw_request?.clientItems,
+    raw?.rawRequest?.items,
+    raw?.rawRequest?.clientItems,
+    raw?.raw_response?.items,
+    raw?.rawResponse?.items,
+  ];
+  return pools.find(Array.isArray)||[];
+}
+function licenseFromItem(item){
+  return item?.licenseLabel||item?.license_label||getLicense(item?.licenseKey||item?.license_key)?.label||'';
+}
+function extractLicenseMapFromPayment(payment){
+  const map={};
+  normalizePaymentItems(payment).forEach(item=>{
+    const id=Number(item.fontId||item.font_id||item.id);
+    const label=licenseFromItem(item);
+    if(!Number.isNaN(id)&&label) map[id]=label;
+  });
+  const detail=payment?.raw_request?.createPaymentTransactionRequest?.detail||payment?.rawRequest?.createPaymentTransactionRequest?.detail||'';
+  if(detail){
+    fonts.forEach(font=>{
+      const safeName=font.name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+      const match=detail.match(new RegExp(`${safeName} \\(([^)]+)\\)`));
+      if(match?.[1]) map[font.id]=match[1];
+    });
+  }
+  return map;
+}
+async function hydrateOwnedLicenses(orders,licenses){
+  const orderIds=(orders||[]).map(o=>o.id).filter(Boolean);
+  if(!orderIds.length) return;
+  (orders||[]).forEach(order=>{
+    readOrderLicenseItems(order.id).forEach(item=>{
+      const id=Number(item.fontId||item.font_id||item.id);
+      const label=licenseFromItem(item);
+      if(!Number.isNaN(id)&&label&&!licenses[id]) licenses[id]=label;
+    });
+  });
+  try{
+    const {data:payments,error}=await sb.from('payments').select('order_id,raw_request,raw_response').in('order_id',orderIds);
+    if(error||!Array.isArray(payments)) return;
+    payments.forEach(payment=>{
+      const byFont=extractLicenseMapFromPayment(payment);
+      Object.keys(byFont).forEach(fid=>{ if(!licenses[fid]) licenses[fid]=byFont[fid]; });
+    });
+  }catch(_){}
+}
+function renderLicenseChip(label){
+  return label?`<span class="license-chip"><i class="ti ti-certificate" style="font-size:11px"></i>${label}</span>`:'';
+}
+function orderLicenseStoreKey(orderId){
+  return `typehaus_order_licenses_${orderId}`;
+}
+function saveOrderLicenseItems(orderId,items){
+  try{ localStorage.setItem(orderLicenseStoreKey(orderId),JSON.stringify(items||[])); }catch(_){}
+}
+function readOrderLicenseItems(orderId){
+  try{ return JSON.parse(localStorage.getItem(orderLicenseStoreKey(orderId))||'[]'); }catch(_){ return []; }
+}
 async function refreshOwnedFonts(){
   if(!currentUser){ 
     ownedFontIds=new Set();
+    ownedFontLicenses={};
     render();
     return;
   }
   const ids=new Set();
+  const licenses={};
   try{
     const {data:purchases,error:pError}=await sb.from('purchases').select('font_id').eq('user_id',currentUser.id);
     if(!pError && Array.isArray(purchases)){
       purchases.forEach(p=>{ if(p.font_id) ids.add(Number(p.font_id)); });
     }
-    const {data:orders,error:oError}=await sb.from('orders').select('font_ids,status').eq('user_id',currentUser.id).eq('status','paid');
+    const {data:orders,error:oError}=await sb.from('orders').select('id,font_ids,status').eq('user_id',currentUser.id).eq('status','paid');
     if(!oError && Array.isArray(orders)){
       orders.forEach(o=>{ (o.font_ids||[]).forEach(fid=>ids.add(Number(fid))); });
+      await hydrateOwnedLicenses(orders,licenses);
     }
   }catch(_){
     ownedFontIds=new Set();
+    ownedFontLicenses={};
     render();
     return;
   }
   ownedFontIds=ids;
+  ownedFontLicenses=licenses;
   render();
 }
 
@@ -628,12 +700,15 @@ async function openPurchases(){
       rows.push({font_id:id,created_at:o.updated_at||o.created_at});
     });
   });
+  const purchaseLicenses={...ownedFontLicenses};
+  await hydrateOwnedLicenses(orders||[],purchaseLicenses);
   if(!rows.length){ el.innerHTML='<div class="empty-msg">&#3618;&#3633;&#3591;&#3652;&#3617;&#3656;&#3617;&#3637;&#3619;&#3634;&#3618;&#3585;&#3634;&#3619;&#3595;&#3639;&#3657;&#3629;</div>'; return; }
   el.innerHTML=rows.map(p=>{
     const f=fonts.find(x=>x.id===p.font_id)||{name:'Font #'+p.font_id};
     const d=new Date(p.created_at).toLocaleDateString('th-TH');
+    const licenseChip=renderLicenseChip(purchaseLicenses[p.font_id]);
     const links=(f.files||[]).map(file=>`<a class="dl-btn" href="./assets/fonts/${file}" download><i class="ti ti-download" style="font-size:14px"></i> ${file}</a>`).join('');
-    return `<div class="purchase-item"><div><div class="purchase-item-info">${f.name}</div><div class="purchase-item-date">${d}</div></div>${links||'<span class="font-file-empty">ไฟล์ฟอนต์จะถูกเพิ่มเร็ว ๆ นี้</span>'}</div>`;
+    return `<div class="purchase-item"><div><div class="purchase-item-info purchase-item-title"><span>${f.name}</span>${licenseChip}</div><div class="purchase-item-date">${d}</div></div>${links||'<span class="font-file-empty">ไฟล์ฟอนต์จะถูกเพิ่มเร็ว ๆ นี้</span>'}</div>`;
   }).join('');
 }
 
@@ -652,12 +727,13 @@ function render(){
   const grid=document.getElementById('font-grid');
   grid.innerHTML=fonts.map(f=>{
     const owned=ownedFontIds.has(f.id);
+    const ownedLicenseChip=renderLicenseChip(ownedFontLicenses[f.id]);
     const selectedLicense=selectedLicenses[f.id]||'';
     const cartItem=cart.find(c=>c.id===f.id);
     const selectedLicenseLabel=getLicense(selectedLicense)?.label||'เลือกรูปแบบ';
     const actionLabel=cartItem?'<i class="ti ti-check" style="font-size:14px"></i> Added':'<i class="ti ti-plus" style="font-size:14px"></i> Add';
     const links=owned
-      ? (f.files||[]).map(file=>`<a class="font-file-link" href="./assets/fonts/${file}" download><i class="ti ti-download"></i><span>${file}</span></a>`).join('')
+      ? (f.files||[]).map(file=>`<a class="font-file-link" href="./assets/fonts/${file}" download><i class="ti ti-download"></i><span>${file}</span></a>`).join('')+ownedLicenseChip
       : '';
     const empty=owned
       ? '<span class="font-file-empty">ไฟล์ฟอนต์จะถูกเพิ่มเร็ว ๆ นี้</span>'
@@ -1104,6 +1180,7 @@ async function doPayment(){
       user_id:currentUser.id, font_ids:cart.map(f=>f.id), total, status:'pending'
     }).select().single();
     if(error) throw error;
+    saveOrderLicenseItems(order.id,cart.map(f=>({fontId:f.id,fontName:f.name,licenseKey:f.licenseKey,licenseLabel:f.licenseLabel,price:f.price})));
     const {data:payment,error:paymentError}=await sb.functions.invoke('create-gbpay-payment',{
       body:{
         orderId:order.id,
