@@ -221,7 +221,16 @@ nav{position:sticky;top:0;z-index:100;background:var(--bg);border-bottom:.5px so
 .receipt-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .receipt-grid .form-group{margin-bottom:0}
 .receipt-grid .wide{grid-column:1/-1}
-@media(max-width:580px){.receipt-grid{grid-template-columns:1fr}}
+.payment-method{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
+.payment-method button{border:.5px solid var(--border);background:var(--bg);color:var(--muted);border-radius:999px;padding:8px 10px;font-size:12px;font-family:inherit;cursor:pointer;transition:background .15s,border-color .15s,color .15s}
+.payment-method button.active{background:var(--text);color:var(--bg);border-color:var(--text)}
+.card-fields{display:none;margin-top:12px;padding:14px;border:.5px solid var(--border);border-radius:var(--rl);background:color-mix(in srgb,var(--bg2) 66%, transparent)}
+.card-fields.open{display:block}
+.card-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.card-grid .form-group{margin-bottom:0}
+.card-grid .wide{grid-column:1/-1}
+.card-note{font-size:12px;line-height:1.55;color:var(--muted);margin-top:8px}
+@media(max-width:580px){.receipt-grid,.card-grid{grid-template-columns:1fr}}
 .payment-result{display:none;background:var(--bg2);border-radius:var(--rl);padding:16px;margin-bottom:16px}
 .payment-result.open{display:block}
 .payment-result.paid-result{background:linear-gradient(145deg,#ecfdf5 0%,#f7fee7 54%,#fff 100%);border:1px solid #bbf7d0;border-radius:22px;padding:24px 18px;text-align:center;box-shadow:0 18px 46px rgba(6,95,70,.14)}
@@ -470,8 +479,22 @@ function collapseFontDetails(){
 
 <div class="auth-modal" id="pay-modal" onclick="closePayOut(event)">
   <div class="pay-box">
-    <h2 id="pay-title" style="margin-bottom:6px">&#3618;&#3639;&#3609;&#3618;&#3633;&#3609;&#3585;&#3634;&#3619;&#3626;&#3633;&#3656;&#3591;&#3595;&#3639;&#3657;&#3629;</h2>
-    <p id="pay-subtitle" style="font-size:13px;color:var(--muted);margin-bottom:20px">&#3619;&#3632;&#3610;&#3610;&#3592;&#3632;&#3626;&#3619;&#3657;&#3634;&#3591; QR &#3614;&#3619;&#3657;&#3629;&#3617;&#3648;&#3614;&#3618;&#3660; &#3627;&#3619;&#3639;&#3629;&#3614;&#3634;&#3588;&#3640;&#3603;&#3652;&#3611;&#3618;&#3633;&#3591;&#3627;&#3609;&#3657;&#3634;&#3594;&#3635;&#3619;&#3632;&#3648;&#3591;&#3636;&#3609; GBPay</p>
+    <h2 id="pay-title" style="margin-bottom:6px">เลือกวิธีชำระเงิน</h2>
+    <p id="pay-subtitle" style="font-size:13px;color:var(--muted);margin-bottom:20px">เลือกวิธีชำระเงินผ่าน GBPrimePay ที่ต้องการได้เลย</p>
+    <div class="payment-method" id="payment-method">
+      <button type="button" id="payment-method-qr" class="active" onclick="setPaymentMethod('qr')"><i class="ti ti-qr-code" style="font-size:14px;margin-right:6px"></i>QR พร้อมเพย์</button>
+      <button type="button" id="payment-method-card" onclick="setPaymentMethod('card')"><i class="ti ti-credit-card" style="font-size:14px;margin-right:6px"></i>บัตรเครดิต / เดบิต</button>
+    </div>
+    <div class="card-fields" id="card-fields">
+      <div class="card-grid">
+        <div class="form-group wide"><label>ชื่อบนบัตร</label><input class="form-input" id="card-name" autocomplete="cc-name" placeholder="เช่น JOHN DOE"/></div>
+        <div class="form-group wide"><label>หมายเลขบัตร</label><input class="form-input" id="card-number" inputmode="numeric" autocomplete="cc-number" maxlength="19" placeholder="xxxx xxxx xxxx xxxx"/></div>
+        <div class="form-group"><label>เดือนหมดอายุ (MM)</label><input class="form-input" id="card-exp-month" inputmode="numeric" autocomplete="cc-exp-month" maxlength="2" placeholder="08"/></div>
+        <div class="form-group"><label>ปีหมดอายุ (YYYY)</label><input class="form-input" id="card-exp-year" inputmode="numeric" autocomplete="cc-exp-year" maxlength="4" placeholder="2029"/></div>
+        <div class="form-group wide"><label>CVV / CVC</label><input class="form-input" id="card-cvv" inputmode="numeric" autocomplete="cc-csc" maxlength="4" placeholder="123"/></div>
+      </div>
+      <div class="card-note">ข้อมูลบัตรจะถูกส่งตรงไปยัง GB Prime Pay ตอนสั่งจ่าย และไม่ถูกเก็บไว้บนเว็บไซต์</div>
+    </div>
     <div class="pay-summary" id="pay-summary"></div>
     <div class="receipt-form" id="receipt-form">
       <label class="receipt-toggle"><input type="checkbox" id="receipt-needed" onchange="toggleReceiptFields()"> ต้องการใบเสร็จ</label>
@@ -508,7 +531,7 @@ function collapseFontDetails(){
       <pre class="pay-debug" id="payment-debug" style="display:none;"></pre>
       <a class="pay-link" id="payment-link" href="#" target="_blank" rel="noopener" style="display:none"><i class="ti ti-external-link"></i><span>Open payment page</span></a>
     </div>
-    <button class="pay-btn" id="pay-btn" onclick="doPayment()"><i class="ti ti-credit-card" style="margin-right:6px"></i>&#3626;&#3619;&#3657;&#3634;&#3591; QR &#3614;&#3619;&#3657;&#3629;&#3617;&#3648;&#3614;&#3618;&#3660;</button>
+    <button class="pay-btn" id="pay-btn" onclick="doPayment()"><i class="ti ti-credit-card" style="margin-right:6px"></i><span id="pay-btn-label">ชำระด้วย QR พร้อมเพย์</span></button>
     <button id="pay-cancel-btn" onclick="closePay()" style="width:100%;margin-top:10px;padding:11px;background:none;border:.5px solid var(--border2);border-radius:999px;font-size:14px;cursor:pointer;font-family:inherit;color:var(--text)">&#3618;&#3585;&#3648;&#3621;&#3636;&#3585;</button>
   </div>
 </div>
@@ -572,6 +595,7 @@ const LICENSE_OPTIONS = [
 // ---- STATE ----
 let cart=[], inputCache={}, imgCache={}, currentUser=null, currentPayment=null, paymentPollTimer=null, paymentCompletedHandled=false;
 let paymentSuccessConfirmTimer=null;
+let selectedPaymentMethod='qr';
 let ownedFontIds=new Set();
 let ownedFontLicenses={};
 let receiptInfoByOrder={};
@@ -921,6 +945,32 @@ function setReceiptType(type){
   document.getElementById('receipt-type-company').classList.toggle('active',type==='company');
   document.getElementById('receipt-name-label').textContent=type==='company'?'ชื่อบริษัท':'ชื่อผู้ซื้อ';
 }
+function setPaymentMethod(method){
+  selectedPaymentMethod=method==='card'?'card':'qr';
+  const qrBtn=document.getElementById('payment-method-qr');
+  const cardBtn=document.getElementById('payment-method-card');
+  const cardFields=document.getElementById('card-fields');
+  const payBtnLabel=document.getElementById('pay-btn-label');
+  if(qrBtn) qrBtn.classList.toggle('active',selectedPaymentMethod==='qr');
+  if(cardBtn) cardBtn.classList.toggle('active',selectedPaymentMethod==='card');
+  if(cardFields) cardFields.classList.toggle('open',selectedPaymentMethod==='card');
+  if(payBtnLabel){
+    payBtnLabel.textContent=selectedPaymentMethod==='card'?'ชำระด้วยบัตร':'ชำระด้วย QR พร้อมเพย์';
+  }
+}
+function getCardInfo(){
+  return {
+    name:(document.getElementById('card-name')?.value||'').trim(),
+    number:(document.getElementById('card-number')?.value||'').replace(/\D/g,''),
+    expMonth:(document.getElementById('card-exp-month')?.value||'').replace(/\D/g,'').padStart(2,'0'),
+    expYear:(document.getElementById('card-exp-year')?.value||'').replace(/\D/g,'').slice(0,4),
+    cvv:(document.getElementById('card-cvv')?.value||'').replace(/\D/g,'')
+  };
+}
+function clearCardFields(){
+  const fields=['card-name','card-number','card-exp-month','card-exp-year','card-cvv'];
+  fields.forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+}
 function getReceiptInfo(){
   const needed=!!document.getElementById('receipt-needed')?.checked;
   return {
@@ -1235,6 +1285,8 @@ function checkout(){
   const receiptEmail=document.getElementById('receipt-email');
   if(receiptEmail&&!receiptEmail.value) receiptEmail.value=currentUser.email||'';
   setReceiptType(document.getElementById('receipt-type')?.value||'personal');
+  setPaymentMethod('qr');
+  clearCardFields();
   toggleReceiptFields();
   document.getElementById('pay-summary').innerHTML=
     cart.map(f=>`<div class="pay-item"><span>${f.name}<br><small style="color:var(--muted)">${f.licenseLabel}</small></span><span>&#3647;${f.price.toLocaleString()}</span></div>`).join('')+
@@ -1246,8 +1298,47 @@ function setPaymentStatus(status,label){
   const pill=document.getElementById('payment-status-pill');
   pill.innerHTML=`<i class="ti ${status==='paid'?'ti-circle-check':status==='failed'?'ti-alert-circle':'ti-loader'}"></i><span>${label||status}</span>`;
 }
+function getPaymentMethodLabel(method){
+  return method==='card' ? 'บัตรเครดิต / เดบิต' : 'PromptPay QR';
+}
+function paymentStatusLabel(status){
+  if(status==='paid') return 'ชำระเงินสำเร็จแล้ว';
+  if(status==='failed') return 'ชำระเงินไม่สำเร็จ';
+  if(status==='3ds_required') return 'รอยืนยัน 3-D Secure';
+  if(status==='pending') return 'รอการชำระเงิน';
+  return status || 'รอสถานะ';
+}
+function setPayButtonLabel(method,loading=false){
+  const btn=document.getElementById('pay-btn');
+  if(!btn) return;
+  const label=method==='card'?'ชำระด้วยบัตร':'ชำระด้วย QR พร้อมเพย์';
+  const icon=' <i class="ti ti-credit-card" style="margin-right:6px"></i>';
+  if(loading){
+    btn.innerHTML=`<span class="spinner"></span>${method==='card'?'กำลังส่งข้อมูลบัตร...':'กำลังสร้าง QR...'}`;
+    return;
+  }
+  btn.innerHTML=`${icon}<span id="pay-btn-label">${label}</span>`;
+}
 function isPaidLikeStatus(status){
   return ['paid','success','completed','successfully','settled'].includes((status||'').toLowerCase());
+}
+function isExpiredCard(expMonth,expYear){
+  const month=Number(expMonth||'');
+  const year=Number(expYear||'');
+  const now=new Date();
+  if(!month||!year) return true;
+  if(year<now.getFullYear()) return true;
+  if(year===now.getFullYear() && month<(now.getMonth()+1)) return true;
+  return false;
+}
+function validateCardInfo(info){
+  if(!info.name) return 'กรุณากรอกชื่อบนบัตร';
+  if(!/^\d{13,19}$/.test(info.number)) return 'ตรวจสอบหมายเลขบัตรอีกครั้ง';
+  if(!/^(0[1-9]|1[0-2])$/.test(info.expMonth)) return 'กรุณากรอกเดือนหมดอายุให้ครบ 2 หลัก เช่น 08';
+  if(!/^\d{4}$/.test(info.expYear)) return 'กรุณากรอกปีหมดอายุให้ครบ 4 หลัก';
+  if(isExpiredCard(info.expMonth,info.expYear)) return 'บัตรนี้หมดอายุแล้ว';
+  if(!/^\d{3,4}$/.test(info.cvv)) return 'กรุณากรอก CVV / CVC';
+  return '';
 }
 function resetPaymentUi(){
   currentPayment=null;
@@ -1276,10 +1367,11 @@ function resetPaymentUi(){
   document.getElementById('pay-summary').style.display='block';
   document.getElementById('receipt-form').style.display='block';
   document.getElementById('pay-cancel-btn').style.display='block';
+  setPaymentMethod(selectedPaymentMethod);
+  setPayButtonLabel(selectedPaymentMethod);
   const payBtn=document.getElementById('pay-btn');
   payBtn.disabled=false;
   payBtn.style.display='block';
-  payBtn.innerHTML='<i class="ti ti-credit-card" style="margin-right:6px"></i>&#3626;&#3619;&#3657;&#3634;&#3591; QR &#3614;&#3619;&#3657;&#3629;&#3617;&#3648;&#3614;&#3618;&#3660;';
   const debug=document.getElementById('payment-debug');
   debug.style.display='none';
   debug.textContent='';
@@ -1291,6 +1383,7 @@ function normalizePaymentResponse(data={}){
     paymentId:data.paymentId||data.providerPaymentId||data.id||null,
     orderId:data.orderId||null,
     status:isPaidLikeStatus(normalized)?'paid':normalized,
+    paymentType:data.paymentType||'qr',
     mode:data.mode||'live',
     qrCodeUrl:data.qrCodeUrl||data.qr_image_url||data.qrImageUrl||null,
     qrCodeText:data.qrCodeText||data.qrPayload||data.qr_code_text||null,
@@ -1325,14 +1418,16 @@ function renderPaymentResult(raw){
   const receiptForm=document.getElementById('receipt-form');
   setPaymentStatus(
     data.status,
-    data.status==='paid'?'Paid':
-    data.status==='failed'?'Failed':
-    data.status==='pending'?'Waiting for payment':
-    data.status
+    paymentStatusLabel(data.status)
   );
-  noteEl.textContent=data.note || (data.mode==='mock'
-    ? 'Mock mode active. When you add real GB Prime Pay credentials and deploy the edge function, this box will show the real PromptPay QR.'
-    : 'Scan the PromptPay QR or continue to the payment page. We will update the order status automatically after payment.');
+  if(data.status==='3ds_required'){
+    noteEl.textContent='ระบบต้องยืนยันตัวตนผ่าน 3-D Secure. กดปุ่มเสร็จสิ้นในกรอบด้านล่างเพื่อยืนยันการชำระเงิน';
+  }else{
+    noteEl.textContent=data.note || (data.mode==='mock'
+      ? 'ระบบยังอยู่โหมดทดสอบ (Mock). เมื่อใส่ GB Prime Pay Credential แล้ว ระบบจะแสดงข้อมูลชำระเงินจริง'
+      : `ชำระผ่าน ${getPaymentMethodLabel(data.paymentType)} แล้ว กดตามคำแนะนำและรออัปเดตสถานะอัตโนมัติ`);
+  }
+  setPaymentMethod(data.paymentType || 'qr');
   if(isPaid || hadPaidState){
     if(paymentSuccessConfirmTimer){ clearTimeout(paymentSuccessConfirmTimer); paymentSuccessConfirmTimer=null; }
     result.classList.add('open','paid-result');
@@ -1399,7 +1494,9 @@ function renderPaymentResult(raw){
   if(data.paymentUrl){
     frame.src=data.paymentUrl;
     frameWrap.style.display='block';
-    frameNote.textContent='QR อยู่ในกรอบนี้ หากหน้าจอเล็กสามารถเลื่อนในกรอบเพื่อดู QR ให้พอดีได้';
+    frameNote.textContent=data.paymentType==='card'
+      ? 'หน้าเบราว์เซอร์นี้จะนำคุณไปยืนยันความปลอดภัยของบัตร กรุณาเสร็จสิ้นให้ครบ'
+      : 'QR อยู่ในกรอบนี้ หากหน้าจอเล็กสามารถเลื่อนในกรอบเพื่อดู QR ให้พอดีได้';
     frameNote.style.display='block';
     link.href=data.paymentUrl;
     link.classList.add('payment-cta');
@@ -1427,7 +1524,7 @@ function renderPaymentResult(raw){
   if(payBtn && !isPaid){
     payBtn.disabled=true;
     payBtn.style.display='block';
-    payBtn.innerHTML='<i class="ti ti-hourglass-empty" style="margin-right:6px"></i>เมื่อชำระเงินแล้วกรุณารอสักครู่';
+    payBtn.innerHTML='<i class="ti ti-hourglass-empty" style="margin-right:6px"></i>รอสถานะการชำระเงิน';
   }
 }
 async function downloadQRCode(){
@@ -1506,10 +1603,16 @@ async function doPayment(){
     return;
   }
   const btn=document.getElementById('pay-btn');
+  const method=selectedPaymentMethod==='card'?'card':'qr';
   btn.disabled=true;
-  btn.innerHTML='<span class="spinner"></span>Creating QR...';
+  setPayButtonLabel(method,true);
   const total=cart.reduce((s,f)=>s+f.price,0);
   try{
+    const cardInfo=method==='card'?getCardInfo():null;
+    if(method==='card'){
+      const cardError=validateCardInfo(cardInfo);
+      if(cardError) throw new Error(cardError);
+    }
     const receiptInfo=getReceiptInfo();
     const {data:order,error}=await sb.from('orders').insert({
       user_id:currentUser.id, font_ids:cart.map(f=>f.id), total, status:'pending'
@@ -1517,30 +1620,37 @@ async function doPayment(){
     if(error) throw error;
     saveOrderLicenseItems(order.id,cart.map(f=>({fontId:f.id,fontName:f.name,licenseKey:f.licenseKey,licenseLabel:f.licenseLabel,price:f.price})));
     saveOrderReceiptInfo(order.id,receiptInfo);
+    const paymentBody={
+      orderId:order.id,
+      amount:total,
+      fontIds:cart.map(f=>f.id),
+      items:cart.map(f=>({fontId:f.id,fontName:f.name,licenseKey:f.licenseKey,licenseLabel:f.licenseLabel,price:f.price})),
+      receiptInfo,
+      userId:currentUser.id,
+      customerEmail:currentUser.email,
+      paymentType:method,
+      description:`TYPEHAUS order ${order.id} - ${cart.map(f=>`${f.name} (${f.licenseLabel})`).join(', ')}`
+    };
+    if(method==='card'){
+      paymentBody.cardInfo=cardInfo;
+    }
     const {data:payment,error:paymentError}=await sb.functions.invoke('create-gbpay-payment',{
-      body:{
-        orderId:order.id,
-        amount:total,
-        fontIds:cart.map(f=>f.id),
-        items:cart.map(f=>({fontId:f.id,fontName:f.name,licenseKey:f.licenseKey,licenseLabel:f.licenseLabel,price:f.price})),
-        receiptInfo,
-        userId:currentUser.id,
-        customerEmail:currentUser.email,
-        description:`TYPEHAUS order ${order.id} - ${cart.map(f=>`${f.name} (${f.licenseLabel})`).join(', ')}`
-      }
+      body:paymentBody
     });
     if(paymentError) throw paymentError;
     renderPaymentResult({...payment,orderId:order.id});
     await pollPaymentStatus(order.id);
   }catch(e){
+    btn.disabled=false;
+    setPayButtonLabel(method);
     alert('Error: '+e.message);
   }
   if(currentPayment){
     btn.disabled=true;
-    btn.innerHTML='<i class="ti ti-hourglass-empty" style="margin-right:6px"></i>เมื่อชำระเงินแล้วกรุณารอสักครู่';
+    btn.innerHTML='<i class="ti ti-hourglass-empty" style="margin-right:6px"></i>รอสถานะการชำระเงิน';
   }else{
     btn.disabled=false;
-    btn.innerHTML='<i class="ti ti-credit-card" style="margin-right:6px"></i>&#3626;&#3619;&#3657;&#3634;&#3591; QR &#3614;&#3619;&#3657;&#3629;&#3617;&#3648;&#3614;&#3618;&#3660;';
+    setPayButtonLabel(method);
   }
 }
 function closePay(){ resetPaymentUi(); document.getElementById('pay-modal').classList.remove('open'); }
