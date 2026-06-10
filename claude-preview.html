@@ -144,6 +144,12 @@ nav{position:sticky;top:0;z-index:100;background:var(--bg);border-bottom:.5px so
 .modal-overlay{display:none;position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.5);align-items:flex-end;justify-content:center}
 .modal-overlay.open{display:flex}
 .modal{background:var(--bg);border-radius:24px 24px 0 0;padding:20px 20px 40px;width:100%;max-width:600px;max-height:80vh;overflow-y:auto}
+.modal-overlay.purchase-open{background:rgba(0,0,0,.44);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);animation:purchaseFade .22s ease both}
+.purchase-sheet{transform-origin:center bottom;animation:purchaseSheetIn .34s cubic-bezier(.18,.92,.22,1) both;box-shadow:0 -18px 60px rgba(0,0,0,.18)}
+.purchase-sheet h2{letter-spacing:-.02em}
+@keyframes purchaseFade{from{opacity:0}to{opacity:1}}
+@keyframes purchaseSheetIn{from{opacity:.4;transform:translateY(46px) scale(.985)}to{opacity:1;transform:translateY(0) scale(1)}}
+@media(min-width:760px){.purchase-sheet{border-radius:24px;max-height:72vh;margin-bottom:24px;padding:24px 28px 34px}}
 .modal-handle{width:36px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 22px}
 .modal h2{font-size:16px;font-weight:600;margin-bottom:18px}
 .modal-item{display:flex;align-items:center;justify-content:space-between;padding:13px 0;border-bottom:.5px solid var(--border)}
@@ -322,7 +328,7 @@ function collapseFontDetails(){
 <div class="grid" id="font-grid"></div>
 
 <div class="bottom-bar">
-  <button class="bar-btn secondary" onclick="openPurchases()"><i class="ti ti-receipt"></i>&#3626;&#3636;&#3656;&#3591;&#3607;&#3637;&#3656;&#3595;&#3639;&#3657;&#3629;&#3652;&#3611;&#3649;&#3621;&#3657;&#3623;</button>
+  <button class="bar-btn secondary" onclick="openPurchases()"><i class="ti ti-receipt"></i>สินค้าที่ซื้อไปแล้ว</button>
   <button class="bar-btn primary" id="bottom-cart-btn" onclick="openCart()"><i class="ti ti-shopping-bag"></i><span id="bottom-cart-label">&#3605;&#3632;&#3585;&#3619;&#3657;&#3634;</span><span class="bottom-cart-count" id="cart-count">0</span></button>
 </div>
 
@@ -377,7 +383,7 @@ function collapseFontDetails(){
 </div>
 
 <div class="modal-overlay" id="pur-overlay" onclick="closeOverlay('pur-overlay')">
-  <div class="modal"><div class="modal-handle"></div><h2>&#3626;&#3636;&#3656;&#3591;&#3607;&#3637;&#3656;&#3595;&#3639;&#3657;&#3629;&#3652;&#3611;&#3649;&#3621;&#3657;&#3623;</h2><div id="pur-list"></div></div>
+  <div class="modal purchase-sheet"><div class="modal-handle"></div><h2>สินค้าที่ซื้อไปแล้ว</h2><div id="pur-list"></div></div>
 </div>
 
 <div class="auth-modal" id="pay-modal" onclick="closePayOut(event)">
@@ -692,7 +698,7 @@ async function refreshOwnedFonts(){
 }
 
 async function openPurchases(){
-  document.getElementById('pur-overlay').classList.add('open');
+  document.getElementById('pur-overlay').classList.add('open','purchase-open');
   const el=document.getElementById('pur-list');
   if(!currentUser){ el.innerHTML='<div class="empty-msg">&#3585;&#3619;&#3640;&#3603;&#3634;&#3648;&#3586;&#3657;&#3634;&#3626;&#3641;&#3656;&#3619;&#3632;&#3610;&#3610;&#3585;&#3656;&#3629;&#3609;</div>'; return; }
   el.innerHTML='<div class="empty-msg">Loading...</div>';
@@ -941,7 +947,7 @@ function openCart(){
   </div>`).join('')+`<div class="modal-total"><span>Total</span><span>&#3647;${total.toLocaleString()}</span></div><div class="cart-actions"><button class="bar-btn secondary" onclick="closeOverlay('cart-overlay')"><i class="ti ti-arrow-left"></i>เลือกต่อ</button><button class="bar-btn primary" onclick="checkout()"><i class="ti ti-credit-card"></i>ชำระเงิน</button></div>`;
 }
 function removeCart(id){ cart=cart.filter(c=>c.id!==id); render(); openCart(); }
-function closeOverlay(id){ document.getElementById(id).classList.remove('open'); }
+function closeOverlay(id){ document.getElementById(id).classList.remove('open','purchase-open'); }
 function closeCartOut(e){ if(e.target===document.getElementById('cart-overlay')) closeOverlay('cart-overlay'); }
 
 // ---- CHECKOUT ----
