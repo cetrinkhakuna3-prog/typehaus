@@ -192,6 +192,18 @@ nav{position:sticky;top:0;z-index:100;background:var(--bg);border-bottom:.5px so
 .pay-summary{background:var(--bg2);border-radius:var(--rl);padding:16px;margin-bottom:20px}
 .pay-item{display:flex;justify-content:space-between;font-size:14px;padding:4px 0}
 .pay-total{display:flex;justify-content:space-between;font-size:15px;font-weight:600;border-top:.5px solid var(--border);padding-top:12px;margin-top:8px}
+.receipt-form{background:var(--bg2);border-radius:var(--rl);padding:14px;margin-bottom:16px}
+.receipt-toggle{display:flex;align-items:center;gap:9px;font-size:13px;font-weight:600;cursor:pointer}
+.receipt-toggle input{width:16px;height:16px;accent-color:var(--text)}
+.receipt-fields{display:none;margin-top:13px}
+.receipt-fields.open{display:block}
+.receipt-type{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.receipt-type button{border:.5px solid var(--border);background:var(--bg);color:var(--muted);border-radius:999px;padding:8px 10px;font-size:12px;font-family:inherit;cursor:pointer}
+.receipt-type button.active{background:var(--text);color:var(--bg);border-color:var(--text)}
+.receipt-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.receipt-grid .form-group{margin-bottom:0}
+.receipt-grid .wide{grid-column:1/-1}
+@media(max-width:580px){.receipt-grid{grid-template-columns:1fr}}
 .payment-result{display:none;background:var(--bg2);border-radius:var(--rl);padding:16px;margin-bottom:16px}
 .payment-result.open{display:block}
 .status-pill{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:999px;font-size:12px;font-weight:600;background:rgba(0,0,0,.06);color:var(--text);margin-bottom:12px}
@@ -394,6 +406,22 @@ function collapseFontDetails(){
     <h2 style="margin-bottom:6px">&#3618;&#3639;&#3609;&#3618;&#3633;&#3609;&#3585;&#3634;&#3619;&#3626;&#3633;&#3656;&#3591;&#3595;&#3639;&#3657;&#3629;</h2>
     <p style="font-size:13px;color:var(--muted);margin-bottom:20px">&#3619;&#3632;&#3610;&#3610;&#3592;&#3632;&#3626;&#3619;&#3657;&#3634;&#3591; QR &#3614;&#3619;&#3657;&#3629;&#3617;&#3648;&#3614;&#3618;&#3660; &#3627;&#3619;&#3639;&#3629;&#3614;&#3634;&#3588;&#3640;&#3603;&#3652;&#3611;&#3618;&#3633;&#3591;&#3627;&#3609;&#3657;&#3634;&#3594;&#3635;&#3619;&#3632;&#3648;&#3591;&#3636;&#3609; GBPay</p>
     <div class="pay-summary" id="pay-summary"></div>
+    <div class="receipt-form">
+      <label class="receipt-toggle"><input type="checkbox" id="receipt-needed" onchange="toggleReceiptFields()"> ต้องการใบเสร็จ</label>
+      <div class="receipt-fields" id="receipt-fields">
+        <div class="receipt-type">
+          <button type="button" id="receipt-type-personal" class="active" onclick="setReceiptType('personal')">บุคคลธรรมดา</button>
+          <button type="button" id="receipt-type-company" onclick="setReceiptType('company')">บริษัท</button>
+        </div>
+        <input type="hidden" id="receipt-type" value="personal"/>
+        <div class="receipt-grid">
+          <div class="form-group wide"><label id="receipt-name-label">ชื่อผู้ซื้อ</label><input class="form-input" id="receipt-name" placeholder="ชื่อ-นามสกุล หรือชื่อบริษัท" autocomplete="name"/></div>
+          <div class="form-group"><label>เลขประจำตัวผู้เสียภาษี</label><input class="form-input" id="receipt-tax-id" placeholder="ถ้ามี"/></div>
+          <div class="form-group"><label>อีเมลรับใบเสร็จ</label><input class="form-input" type="email" id="receipt-email" placeholder="receipt@email.com" autocomplete="email"/></div>
+          <div class="form-group wide"><label>ที่อยู่</label><input class="form-input" id="receipt-address" placeholder="ที่อยู่สำหรับออกใบเสร็จ"/></div>
+        </div>
+      </div>
+    </div>
     <div class="payment-result" id="payment-result">
       <div class="status-pill" id="payment-status-pill"><i class="ti ti-loader"></i><span>Pending</span></div>
       <div class="qr-box" id="payment-qr-box" style="display:none"><img id="payment-qr-image" alt="PromptPay QR"/></div>
@@ -470,6 +498,7 @@ let cart=[], inputCache={}, imgCache={}, currentUser=null, currentPayment=null, 
 let paymentSuccessConfirmTimer=null;
 let ownedFontIds=new Set();
 let ownedFontLicenses={};
+let receiptInfoByOrder={};
 let lastPaidCartSignature='';
 let selectedLicenses={};
 let pendingLicenseFontId=null;
@@ -653,6 +682,8 @@ async function hydrateOwnedLicenses(orders,licenses){
     const {data:payments,error}=await sb.from('payments').select('order_id,user_id,raw_request,raw_response').in('order_id',orderIds).eq('user_id',currentUser.id);
     if(error||!Array.isArray(payments)) return;
     payments.forEach(payment=>{
+      const receiptInfo=payment?.raw_request?.receiptInfo||payment?.rawRequest?.receiptInfo||{};
+      if(payment.order_id&&receiptInfo&&Object.keys(receiptInfo).length) receiptInfoByOrder[payment.order_id]=receiptInfo;
       const byFont=extractLicenseMapFromPayment(payment);
       Object.keys(byFont).forEach(fid=>{ if(!licenses[fid]) licenses[fid]=byFont[fid]; });
     });
@@ -677,18 +708,23 @@ function buildReceiptNo(fontId,dateValue){
   const d=String(date.getDate()).padStart(2,'0');
   return `TH-RC-${y}${m}${d}-${String(fontId).padStart(3,'0')}`;
 }
-function openReceipt(fontId,licenseLabel,dateValue){
+function openReceipt(fontId,licenseLabel,dateValue,orderId=''){
   const font=fonts.find(f=>f.id===Number(fontId));
   if(!font) return;
   const issuedAt=new Date(dateValue||Date.now());
   const receiptNo=buildReceiptNo(font.id,issuedAt);
-  const customer=currentUser?.email||'-';
+  const receiptInfo=readOrderReceiptInfo(orderId);
+  const customer=receiptInfo.name||currentUser?.email||'-';
+  const customerEmail=receiptInfo.email||currentUser?.email||'-';
+  const buyerType=receiptInfo.type==='company'?'บริษัท':'บุคคลธรรมดา';
+  const taxId=receiptInfo.taxId||'-';
+  const address=receiptInfo.address||'-';
   const license=licenseLabel||'รูปแบบไม่ระบุ';
   const receiptHtml=`<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${receiptNo}</title><style>
     *{box-sizing:border-box}body{margin:0;background:#f5f5f3;color:#111110;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;padding:24px}.receipt{max-width:760px;margin:0 auto;background:#fff;border:1px solid rgba(0,0,0,.12);border-radius:22px;padding:34px}.top{display:flex;justify-content:space-between;gap:18px;border-bottom:1px solid rgba(0,0,0,.12);padding-bottom:18px;margin-bottom:22px}.brand{font-weight:800;letter-spacing:.16em;font-size:18px}.muted{color:#6b6a67;font-size:13px;line-height:1.55}.title{font-size:28px;font-weight:800;margin:0 0 6px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:18px 0}.box{background:#f5f5f3;border-radius:14px;padding:14px}.label{font-size:11px;color:#777;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px}.value{font-size:14px;font-weight:650}.items{width:100%;border-collapse:collapse;margin-top:18px}.items th{text-align:left;font-size:12px;color:#777;border-bottom:1px solid rgba(0,0,0,.12);padding:10px 0}.items td{padding:14px 0;border-bottom:1px solid rgba(0,0,0,.08);vertical-align:top}.total{display:flex;justify-content:space-between;align-items:center;margin-top:18px;padding:16px;border-radius:16px;background:#111110;color:#fff;font-size:18px;font-weight:800}.note{margin-top:18px;padding:14px;border-radius:14px;background:#fff7ed;color:#7c2d12;font-size:12px;line-height:1.55}.actions{max-width:760px;margin:16px auto 0;display:flex;gap:10px}.btn{flex:1;border:0;border-radius:999px;padding:13px 18px;font-weight:700;cursor:pointer}.primary{background:#111110;color:#fff}.secondary{background:#fff;border:1px solid rgba(0,0,0,.14)}@media print{body{background:#fff;padding:0}.receipt{border:0;border-radius:0}.actions{display:none}}@media(max-width:640px){body{padding:12px}.receipt{padding:22px}.top,.grid{grid-template-columns:1fr;display:grid}.title{font-size:24px}}
   </style></head><body><main class="receipt">
     <div class="top"><div><div class="brand">TYPEHAUS</div><div class="muted">Digital Font Store</div></div><div style="text-align:right"><h1 class="title">ใบเสร็จรับเงิน</h1><div class="muted">Receipt / ไม่ใช่ใบกำกับภาษี</div></div></div>
-    <div class="grid"><div class="box"><div class="label">Receipt No.</div><div class="value">${escapeHtml(receiptNo)}</div></div><div class="box"><div class="label">Issued Date</div><div class="value">${issuedAt.toLocaleDateString('th-TH')}</div></div><div class="box"><div class="label">Customer</div><div class="value">${escapeHtml(customer)}</div></div><div class="box"><div class="label">Payment</div><div class="value">PromptPay / GBPrimePay</div></div></div>
+    <div class="grid"><div class="box"><div class="label">Receipt No.</div><div class="value">${escapeHtml(receiptNo)}</div></div><div class="box"><div class="label">Issued Date</div><div class="value">${issuedAt.toLocaleDateString('th-TH')}</div></div><div class="box"><div class="label">Customer</div><div class="value">${escapeHtml(customer)}</div><div class="muted">${escapeHtml(buyerType)} · ${escapeHtml(customerEmail)}</div></div><div class="box"><div class="label">Payment</div><div class="value">PromptPay / GBPrimePay</div></div><div class="box"><div class="label">Tax ID</div><div class="value">${escapeHtml(taxId)}</div></div><div class="box"><div class="label">Address</div><div class="value">${escapeHtml(address)}</div></div></div>
     <table class="items"><thead><tr><th>สินค้า</th><th>รูปแบบ</th><th style="text-align:right">ราคา</th></tr></thead><tbody><tr><td><strong>${escapeHtml(font.name)}</strong><br><span class="muted">ไฟล์ฟอนต์ดิจิทัล</span></td><td>${escapeHtml(license)}</td><td style="text-align:right">฿${Number(font.price||0).toLocaleString()}</td></tr></tbody></table>
     <div class="total"><span>Total Paid</span><span>฿${Number(font.price||0).toLocaleString()}</span></div>
     <div class="note">หมายเหตุ: ผู้ขายยังไม่ได้จดทะเบียนภาษีมูลค่าเพิ่ม ราคานี้ไม่รวม VAT และเอกสารนี้เป็นใบเสร็จรับเงินธรรมดา ไม่ใช่ใบกำกับภาษี</div>
@@ -718,6 +754,38 @@ function saveOrderLicenseItems(orderId,items){
 }
 function readOrderLicenseItems(orderId){
   try{ return JSON.parse(localStorage.getItem(orderLicenseStoreKey(orderId))||'[]'); }catch(_){ return []; }
+}
+function orderReceiptStoreKey(orderId){
+  return `typehaus_order_receipt_${orderId}`;
+}
+function saveOrderReceiptInfo(orderId,info){
+  try{ localStorage.setItem(orderReceiptStoreKey(orderId),JSON.stringify(info||{})); }catch(_){}
+  if(orderId) receiptInfoByOrder[orderId]=info||{};
+}
+function readOrderReceiptInfo(orderId){
+  if(orderId&&receiptInfoByOrder[orderId]) return receiptInfoByOrder[orderId];
+  try{ return JSON.parse(localStorage.getItem(orderReceiptStoreKey(orderId))||'{}'); }catch(_){ return {}; }
+}
+function toggleReceiptFields(){
+  const needed=document.getElementById('receipt-needed')?.checked;
+  document.getElementById('receipt-fields')?.classList.toggle('open',!!needed);
+}
+function setReceiptType(type){
+  document.getElementById('receipt-type').value=type;
+  document.getElementById('receipt-type-personal').classList.toggle('active',type==='personal');
+  document.getElementById('receipt-type-company').classList.toggle('active',type==='company');
+  document.getElementById('receipt-name-label').textContent=type==='company'?'ชื่อบริษัท':'ชื่อผู้ซื้อ';
+}
+function getReceiptInfo(){
+  const needed=!!document.getElementById('receipt-needed')?.checked;
+  return {
+    needed,
+    type:document.getElementById('receipt-type')?.value||'personal',
+    name:document.getElementById('receipt-name')?.value?.trim()||'',
+    taxId:document.getElementById('receipt-tax-id')?.value?.trim()||'',
+    address:document.getElementById('receipt-address')?.value?.trim()||'',
+    email:document.getElementById('receipt-email')?.value?.trim()||currentUser?.email||''
+  };
 }
 async function refreshOwnedFonts(){
   if(!currentUser){ 
@@ -764,14 +832,14 @@ async function openPurchases(){
   (purchases||[]).forEach(p=>{
     if(!p.font_id||seen.has(Number(p.font_id))) return;
     seen.add(Number(p.font_id));
-    rows.push({font_id:Number(p.font_id),created_at:p.created_at});
+    rows.push({font_id:Number(p.font_id),created_at:p.created_at,order_id:p.order_id||''});
   });
   (orders||[]).forEach(o=>{
     (o.font_ids||[]).forEach(fid=>{
       const id=Number(fid);
       if(Number.isNaN(id)||seen.has(id)) return;
       seen.add(id);
-      rows.push({font_id:id,created_at:o.updated_at||o.created_at});
+      rows.push({font_id:id,created_at:o.updated_at||o.created_at,order_id:o.id});
     });
   });
   const purchaseLicenses={...ownedFontLicenses};
@@ -783,7 +851,7 @@ async function openPurchases(){
     const licenseLabel=purchaseLicenses[p.font_id]||'รูปแบบไม่ระบุ';
     const licenseChip=renderLicenseChip(licenseLabel);
     const links=(f.files||[]).map(file=>`<a class="dl-btn" onclick="event.stopPropagation()" href="./assets/fonts/${file}" download><i class="ti ti-download" style="font-size:14px"></i> ${file}</a>`).join('');
-    const receiptBtn=`<button class="dl-btn receipt-btn" type="button" onclick="event.stopPropagation();openReceipt(${p.font_id},'${licenseLabel}', '${p.created_at}')"><i class="ti ti-receipt" style="font-size:14px"></i> ใบเสร็จ</button>`;
+    const receiptBtn=`<button class="dl-btn receipt-btn" type="button" onclick="event.stopPropagation();openReceipt(${p.font_id},'${licenseLabel}', '${p.created_at}', '${p.order_id||''}')"><i class="ti ti-receipt" style="font-size:14px"></i> ใบเสร็จ</button>`;
     return `<div class="purchase-item"><div><div class="purchase-item-info purchase-item-title"><span>${f.name}</span>${licenseChip}</div><div class="purchase-item-date">${d}</div></div><div class="purchase-file-links">${links||'<span class="font-file-empty">ไฟล์ฟอนต์จะถูกเพิ่มเร็ว ๆ นี้</span>'}${receiptBtn}</div></div>`;
   }).join('');
 }
@@ -1014,6 +1082,10 @@ function checkout(){
   }
   const total=cart.reduce((s,f)=>s+f.price,0);
   resetPaymentUi();
+  const receiptEmail=document.getElementById('receipt-email');
+  if(receiptEmail&&!receiptEmail.value) receiptEmail.value=currentUser.email||'';
+  setReceiptType(document.getElementById('receipt-type')?.value||'personal');
+  toggleReceiptFields();
   document.getElementById('pay-summary').innerHTML=
     cart.map(f=>`<div class="pay-item"><span>${f.name}<br><small style="color:var(--muted)">${f.licenseLabel}</small></span><span>&#3647;${f.price.toLocaleString()}</span></div>`).join('')+
     `<div class="pay-total"><span>Total</span><span>&#3647;${total.toLocaleString()}</span></div>`;
@@ -1252,17 +1324,20 @@ async function doPayment(){
   btn.innerHTML='<span class="spinner"></span>Creating QR...';
   const total=cart.reduce((s,f)=>s+f.price,0);
   try{
+    const receiptInfo=getReceiptInfo();
     const {data:order,error}=await sb.from('orders').insert({
       user_id:currentUser.id, font_ids:cart.map(f=>f.id), total, status:'pending'
     }).select().single();
     if(error) throw error;
     saveOrderLicenseItems(order.id,cart.map(f=>({fontId:f.id,fontName:f.name,licenseKey:f.licenseKey,licenseLabel:f.licenseLabel,price:f.price})));
+    saveOrderReceiptInfo(order.id,receiptInfo);
     const {data:payment,error:paymentError}=await sb.functions.invoke('create-gbpay-payment',{
       body:{
         orderId:order.id,
         amount:total,
         fontIds:cart.map(f=>f.id),
         items:cart.map(f=>({fontId:f.id,fontName:f.name,licenseKey:f.licenseKey,licenseLabel:f.licenseLabel,price:f.price})),
+        receiptInfo,
         userId:currentUser.id,
         customerEmail:currentUser.email,
         description:`TYPEHAUS order ${order.id} - ${cart.map(f=>`${f.name} (${f.licenseLabel})`).join(', ')}`
