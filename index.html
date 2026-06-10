@@ -632,7 +632,7 @@ async function hydrateOwnedLicenses(orders,licenses){
     });
   });
   try{
-    const {data:payments,error}=await sb.from('payments').select('order_id,raw_request,raw_response').in('order_id',orderIds);
+    const {data:payments,error}=await sb.from('payments').select('order_id,user_id,raw_request,raw_response').in('order_id',orderIds).eq('user_id',currentUser.id);
     if(error||!Array.isArray(payments)) return;
     payments.forEach(payment=>{
       const byFont=extractLicenseMapFromPayment(payment);
