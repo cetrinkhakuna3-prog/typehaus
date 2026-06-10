@@ -236,8 +236,8 @@ nav{position:sticky;top:0;z-index:100;background:var(--bg);border-bottom:.5px so
 .payment-result.paid-result{background:linear-gradient(145deg,#ecfdf5 0%,#f7fee7 54%,#fff 100%);border:1px solid #bbf7d0;border-radius:22px;padding:24px 18px;text-align:center;box-shadow:0 18px 46px rgba(6,95,70,.14)}
 .payment-result.paid-result .status-pill{display:none}
 .status-pill{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:999px;font-size:12px;font-weight:600;background:rgba(0,0,0,.06);color:var(--text);margin-bottom:12px}
-.qr-box{display:flex;justify-content:center;align-items:center;background:var(--bg);border:.5px solid var(--border);border-radius:16px;padding:14px;margin:12px auto;width:min(100%,276px);aspect-ratio:1/1}
-.qr-box img{width:100%;height:100%;max-width:248px;max-height:248px;display:block;object-fit:contain}
+.qr-box{display:flex;justify-content:center;align-items:center;background:#fff;border:.5px solid var(--border);border-radius:20px;padding:12px;margin:12px auto;width:min(100%,420px);box-shadow:0 12px 30px rgba(0,0,0,.08);overflow:hidden}
+.qr-box img{width:100%;height:auto;max-width:100%;display:block;object-fit:contain;border-radius:14px;background:#fff}
 .qr-save-btn{display:none;width:100%;margin:2px 0 12px;border:.5px solid var(--border2);background:var(--bg);color:var(--text);border-radius:999px;padding:10px 14px;font-size:13px;font-family:inherit;font-weight:500;cursor:pointer;align-items:center;justify-content:center;gap:7px;transition:background .15s,opacity .15s}
 .qr-save-btn:hover{background:var(--bg2)}
 .pay-note{font-size:12px;line-height:1.55;color:var(--muted)}
@@ -276,6 +276,7 @@ nav{position:sticky;top:0;z-index:100;background:var(--bg);border-bottom:.5px so
 @media(max-width:720px){
   .auth-modal{align-items:flex-start;overflow-y:auto;padding:10px 10px calc(96px + env(safe-area-inset-bottom))}
   .pay-box{width:100%;max-width:none;margin:8px 0 120px;padding:20px 16px;border-radius:18px}
+  .qr-box{width:100%;padding:10px;border-radius:18px}
   .payment-frame-wrap{max-height:54vh}
   .payment-frame{height:54vh;min-height:430px}
   .pay-link.payment-cta{display:inline-flex!important}
@@ -1398,6 +1399,10 @@ function renderPaymentResult(raw){
   const data=normalizePaymentResponse(raw);
   const hadPaidState = isPaidLikeStatus(currentPayment?.status) || paymentCompletedHandled;
   const isPaid = isPaidLikeStatus(data.status);
+  const isCardPayment = (data.paymentType||selectedPaymentMethod)==='card';
+  const hasQrImage = !!data.qrCodeUrl;
+  const isSmallViewport = typeof window.matchMedia==='function' && window.matchMedia('(max-width: 720px)').matches;
+  const shouldShowEmbeddedFrame = !!data.paymentUrl && (isCardPayment || (!hasQrImage && !isSmallViewport));
   if(isPaid) paymentCompletedHandled=true;
   currentPayment=data;
   const result=document.getElementById('payment-result');
@@ -1472,7 +1477,10 @@ function renderPaymentResult(raw){
     if(paymentSuccessConfirmTimer){ clearTimeout(paymentSuccessConfirmTimer); paymentSuccessConfirmTimer=null; }
   }
   if(data.qrCodeUrl){
-    document.getElementById('payment-qr-image').src=data.qrCodeUrl;
+    const qrImage=document.getElementById('payment-qr-image');
+    qrImage.crossOrigin='anonymous';
+    qrImage.referrerPolicy='no-referrer';
+    qrImage.src=data.qrCodeUrl;
     document.getElementById('payment-qr-box').style.display='flex';
     document.getElementById('payment-qr-save').style.display='flex';
     document.getElementById('payment-qr-save').innerHTML='<i class="ti ti-download" style="font-size:14px"></i>บันทึก QR Code';
@@ -1491,10 +1499,10 @@ function renderPaymentResult(raw){
   }else{
     code.style.display='none';
   }
-  if(data.paymentUrl){
+  if(shouldShowEmbeddedFrame){
     frame.src=data.paymentUrl;
     frameWrap.style.display='block';
-    frameNote.textContent=data.paymentType==='card'
+    frameNote.textContent=isCardPayment
       ? 'หน้าเบราว์เซอร์นี้จะนำคุณไปยืนยันความปลอดภัยของบัตร กรุณาเสร็จสิ้นให้ครบ'
       : 'QR อยู่ในกรอบนี้ หากหน้าจอเล็กสามารถเลื่อนในกรอบเพื่อดู QR ให้พอดีได้';
     frameNote.style.display='block';
@@ -1505,9 +1513,20 @@ function renderPaymentResult(raw){
   }else{
     frameWrap.style.display='none';
     frame.src='about:blank';
-    frameNote.style.display='none';
-    link.classList.remove('payment-cta');
-    link.style.display='none';
+    if(data.paymentUrl && !isCardPayment){
+      frameNote.textContent=hasQrImage
+        ? 'สแกนจาก QR ด้านบนได้เลย ถ้าต้องการเปิดหน้า GBPay แบบเต็มจอ กดปุ่มด้านล่าง'
+        : 'เปิดหน้า GBPay แยกเพื่อดู QR แบบเต็มจอ';
+      frameNote.style.display='block';
+      link.href=data.paymentUrl;
+      link.classList.add('payment-cta');
+      link.querySelector('span').textContent='เปิดหน้าชำระเงินแยก';
+      link.style.display='inline-flex';
+    }else{
+      frameNote.style.display='none';
+      link.classList.remove('payment-cta');
+      link.style.display='none';
+    }
   }
   if((data.callbackUrl || data.backgroundUrl) && new URLSearchParams(location.search).has('debug')){
     debug.style.display='block';
@@ -1527,11 +1546,48 @@ function renderPaymentResult(raw){
     payBtn.innerHTML='<i class="ti ti-hourglass-empty" style="margin-right:6px"></i>รอสถานะการชำระเงิน';
   }
 }
+function isIOSLikeDevice(){
+  return /iPad|iPhone|iPod/.test(navigator.userAgent||'') || (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1);
+}
+function openQrImageForSaving(src){
+  const popup=window.open('about:blank','_blank');
+  if(!popup) return false;
+  popup.document.title='TYPEHAUS QR Code';
+  popup.document.body.style.margin='0';
+  popup.document.body.style.background='#111';
+  popup.document.body.style.color='#fff';
+  popup.document.body.style.fontFamily='system-ui,-apple-system,BlinkMacSystemFont,sans-serif';
+  popup.document.body.style.display='grid';
+  popup.document.body.style.placeItems='center';
+  popup.document.body.style.minHeight='100vh';
+  popup.document.body.style.padding='20px';
+  const wrap=popup.document.createElement('div');
+  wrap.style.width='min(100%,480px)';
+  wrap.style.textAlign='center';
+  const img=popup.document.createElement('img');
+  img.src=src;
+  img.alt='TYPEHAUS QR Code';
+  img.style.width='100%';
+  img.style.height='auto';
+  img.style.display='block';
+  img.style.borderRadius='18px';
+  img.style.background='#fff';
+  img.style.boxShadow='0 18px 44px rgba(0,0,0,.32)';
+  const note=popup.document.createElement('p');
+  note.textContent='ถ้าเครื่องยังไม่บันทึกอัตโนมัติ ให้แตะค้างที่รูปนี้แล้วเลือกบันทึกรูปภาพ';
+  note.style.margin='14px 0 0';
+  note.style.fontSize='14px';
+  note.style.lineHeight='1.6';
+  note.style.opacity='.9';
+  wrap.append(img,note);
+  popup.document.body.append(wrap);
+  return true;
+}
 async function downloadQRCode(){
   const img=document.getElementById('payment-qr-image');
   const src=img?.src||currentPayment?.qrCodeUrl;
   if(!currentPayment?.qrCodeUrl && currentPayment?.paymentUrl){
-    alert('ตอนนี้ GBPay ส่ง QR มาเป็นหน้าเว็บ ไม่ใช่ไฟล์รูป QR โดยตรง จึงบันทึกเข้าแกลเลอรีจากปุ่มนี้ไม่ได้ ให้แตะค้างที่ QR ในกรอบแล้วเลือกบันทึกรูปภาพ');
+    window.open(currentPayment.paymentUrl,'_blank','noopener');
     return;
   }
   if(!src){ return; }
@@ -1552,8 +1608,16 @@ async function downloadQRCode(){
     document.body.appendChild(a);
     a.click();
     a.remove();
+    if(isIOSLikeDevice()) setTimeout(()=>openQrImageForSaving(url),150);
     setTimeout(()=>URL.revokeObjectURL(url),1000);
   }catch(_){
+    if(navigator.share){
+      try{
+        await navigator.share({title:'TYPEHAUS QR Code',url:src});
+        return;
+      }catch(__){}
+    }
+    if(openQrImageForSaving(src)) return;
     const a=document.createElement('a');
     a.href=src;
     a.download=filename;
