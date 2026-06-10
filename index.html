@@ -150,6 +150,9 @@ nav{position:sticky;top:0;z-index:100;background:var(--bg);border-bottom:.5px so
 .purchase-sheet h2{letter-spacing:-.02em}
 .purchase-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}
 .purchase-head h2{margin-bottom:0;white-space:nowrap}
+.purchase-title-block{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-width:0}
+.account-license-code{display:inline-flex;align-items:center;gap:5px;border:.5px solid var(--border);background:var(--bg2);color:var(--muted);border-radius:999px;padding:4px 8px;font-size:10px;line-height:1;white-space:nowrap}
+.account-license-code .value{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--text);font-weight:700;letter-spacing:0}
 .central-license-btn{border:.5px solid var(--border2);background:var(--bg);color:var(--text);border-radius:999px;padding:7px 12px;font-size:12px;font-family:inherit;cursor:pointer;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;flex-shrink:0}
 .central-license-btn:hover{background:var(--bg2)}
 .license-doc-modal{max-width:720px}
@@ -157,6 +160,8 @@ nav{position:sticky;top:0;z-index:100;background:var(--bg);border-bottom:.5px so
 .license-doc-title{font-size:18px;font-weight:700;letter-spacing:-.02em}
 .license-doc-sub{font-size:12px;color:var(--muted);line-height:1.5;margin-top:4px}
 .license-doc-body{display:grid;gap:14px;font-size:13px;line-height:1.72;color:var(--muted)}
+.license-doc-code-card{border:.5px solid var(--border2);border-radius:14px;padding:12px 13px;background:var(--bg);display:flex;align-items:center;justify-content:space-between;gap:10px;color:var(--muted);font-size:12px;line-height:1.45}
+.license-doc-code-card strong{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--text);font-size:13px;letter-spacing:0}
 .license-doc-section{border:.5px solid var(--border);border-radius:12px;background:var(--bg2);padding:13px}
 .license-doc-section h3{font-size:13px;color:var(--text);margin-bottom:6px}
 .license-doc-section ul{padding-left:18px}
@@ -167,7 +172,7 @@ nav{position:sticky;top:0;z-index:100;background:var(--bg);border-bottom:.5px so
 @keyframes purchaseFade{from{opacity:0}to{opacity:1}}
 @keyframes purchaseSheetIn{from{opacity:.4;transform:translateY(46px) scale(.985)}to{opacity:1;transform:translateY(0) scale(1)}}
 @media(min-width:760px){.purchase-sheet{border-radius:24px;max-height:72vh;margin-bottom:24px;padding:24px 28px 34px}.license-doc-modal{border-radius:24px;max-height:82vh;margin-bottom:24px;padding:24px 28px 34px}}
-@media(max-width:520px){.purchase-head{gap:8px}.central-license-btn{padding:7px 10px;font-size:11px}.license-doc-head{flex-direction:column}.license-doc-title{font-size:16px}.license-doc-bottom{justify-content:stretch}.license-doc-done{width:100%}}
+@media(max-width:520px){.purchase-head{align-items:flex-start;gap:8px;flex-wrap:wrap}.purchase-title-block{width:100%}.account-license-code{font-size:9px}.central-license-btn{padding:7px 10px;font-size:11px}.license-doc-head{flex-direction:column}.license-doc-title{font-size:16px}.license-doc-code-card{align-items:flex-start;flex-direction:column}.license-doc-bottom{justify-content:stretch}.license-doc-done{width:100%}}
 .modal-handle{width:36px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 22px}
 .modal h2{font-size:16px;font-weight:600;margin-bottom:18px}
 .modal-item{display:flex;align-items:center;justify-content:space-between;padding:13px 0;border-bottom:.5px solid var(--border)}
@@ -451,7 +456,10 @@ function collapseFontDetails(){
   <div class="modal purchase-sheet" onclick="event.stopPropagation()">
     <div class="modal-handle"></div>
     <div class="purchase-head">
-      <h2>สินค้าที่ซื้อไปแล้ว</h2>
+      <div class="purchase-title-block">
+        <h2>สินค้าที่ซื้อไปแล้ว</h2>
+        <span class="account-license-code" id="purchase-license-code" style="display:none"><span>รหัสสัญญา</span><span class="value"></span></span>
+      </div>
       <button class="central-license-btn" type="button" onclick="openCentralLicense()"><i class="ti ti-certificate" style="font-size:14px"></i>สัญญาอนุญาต</button>
     </div>
     <div id="pur-list"></div>
@@ -469,8 +477,9 @@ function collapseFontDetails(){
       <button class="license-close" type="button" onclick="closeCentralLicense()" aria-label="ปิด"><i class="ti ti-x" style="font-size:14px"></i></button>
     </div>
     <div class="license-doc-body">
+      <div class="license-doc-code-card"><span>รหัสสัญญาอนุญาตประจำบัญชี</span><strong id="central-license-code">TH-LIC-ACCOUNT-PENDING</strong></div>
       <div class="license-doc-note">สัญญานี้เป็นข้อตกลงระหว่างผู้อนุญาต ซึ่งเป็นเจ้าของสิทธิ์ฟอนต์ที่จำหน่ายผ่านเว็บไซต์ TYPEHAUS กับผู้ซื้อหรือผู้ใช้งานบัญชีที่ชำระเงินสำเร็จบนเว็บไซต์ TYPEHAUS ซึ่งต่อไปนี้เรียกว่า “ผู้รับอนุญาต”</div>
-      <section class="license-doc-section"><h3>การยืนยันสิทธิ์</h3><p>ผู้รับอนุญาตไม่จำเป็นต้องดาวน์โหลดสัญญาอนุญาตแยกทีละฟอนต์ เพราะประวัติการซื้อ รายการฟอนต์ วันที่ซื้อ เลขคำสั่งซื้อ ใบเสร็จ และรูปแบบลิขสิทธิ์ ถูกจัดเก็บไว้ในระบบของเว็บไซต์ TYPEHAUS และสามารถใช้ตรวจสอบสิทธิ์ย้อนหลังได้</p></section>
+      <section class="license-doc-section"><h3>การยืนยันสิทธิ์</h3><p>ผู้รับอนุญาตไม่จำเป็นต้องดาวน์โหลดสัญญาอนุญาตแยกทีละฟอนต์ เพราะประวัติการซื้อ รายการฟอนต์ วันที่ซื้อ เลขคำสั่งซื้อ ใบเสร็จ รูปแบบลิขสิทธิ์ และรหัสสัญญาอนุญาตประจำบัญชี ถูกจัดเก็บไว้ในระบบของเว็บไซต์ TYPEHAUS และสามารถใช้ตรวจสอบสิทธิ์ย้อนหลังได้</p></section>
       <section class="license-doc-section"><h3>รูปแบบลิขสิทธิ์</h3><ul><li><strong>ส่วนตัว:</strong> ใช้เอง ไม่ใช้ในงานรับจ้าง งานแบรนด์ หรือการขายสินค้า/บริการ</li><li><strong>เชิงพาณิชย์บุคคล:</strong> ใช้กับงานขาย งานคอนเทนต์ งานลูกค้า หรืองานรับจ้างที่ผู้ซื้อเป็นผู้ผลิตงานเอง</li><li><strong>เชิงพาณิชย์บริษัท:</strong> ใช้ในนามบริษัท ทีม แบรนด์ ร้านค้า หรือองค์กร โดยไม่รวมการส่งต่อไฟล์ฟอนต์ให้บุคคลภายนอก</li></ul></section>
       <section class="license-doc-section"><h3>สิ่งที่ทำได้</h3><p>สามารถติดตั้ง ใช้งาน สร้างงาน และเซฟงานปลายทางได้ตามปกติ เช่น JPG, PNG, PDF, MP4, งานพิมพ์, โพสต์โซเชียล, คอนเทนต์ TikTok, YouTube, สื่อการตลาด และบรรจุภัณฑ์สินค้า โดยต้องอยู่ในขอบเขตลิขสิทธิ์ที่เลือก</p></section>
       <section class="license-doc-section"><h3>ข้อห้าม</h3><ul><li>ห้ามแจกจ่าย ส่งต่อ อัปโหลด ขายต่อ ให้เช่า หรือแบ่งปันไฟล์ฟอนต์ต้นฉบับแก่ผู้อื่น</li><li>ห้ามแนบไฟล์ฟอนต์ต้นฉบับไปกับเทมเพลต ไฟล์ editable หรือระบบที่ทำให้ผู้อื่นดึงฟอนต์ไปใช้แยกได้</li><li>ห้ามดัดแปลง เปลี่ยนชื่อ แปลงไฟล์ หรือสร้างฟอนต์ใหม่จากฟอนต์เดิมเพื่อนำไปขาย แจก หรือเผยแพร่ต่อ</li><li>การฝังฟอนต์ในเว็บไซต์ แอป เกม ซอฟต์แวร์ หรือระบบที่ให้ผู้ใช้อื่นพิมพ์/สร้างงานจากฟอนต์โดยตรง ต้องได้รับอนุญาตเพิ่มเติมก่อน</li></ul></section>
@@ -617,6 +626,34 @@ let pendingConfirmationEmail='';
 function getDefaultSrc(id) {
   const el = document.getElementById('di'+id);
   return el ? el.src : null;
+}
+
+function hashLicenseSource(value){
+  let hash=2166136261;
+  for(let i=0;i<value.length;i++){
+    hash^=value.charCodeAt(i);
+    hash=Math.imul(hash,16777619);
+  }
+  return (hash>>>0).toString(36).toUpperCase().padStart(8,'0');
+}
+function getAccountLicenseCode(user=currentUser){
+  if(!user?.id) return 'TH-LIC-ACCOUNT-PENDING';
+  const year=new Date(user.created_at||Date.now()).getFullYear();
+  const source=`${user.id}|${user.email||''}`;
+  const hash=hashLicenseSource(source);
+  const tail=String(user.id).replace(/[^a-zA-Z0-9]/g,'').slice(-4).toUpperCase();
+  return `TH-LIC-${year}-${hash.slice(0,4)}-${hash.slice(4,8)}${tail?`-${tail}`:''}`;
+}
+function renderAccountLicenseCode(){
+  const code=getAccountLicenseCode();
+  const purchaseEl=document.getElementById('purchase-license-code');
+  if(purchaseEl){
+    const valueEl=purchaseEl.querySelector('.value');
+    if(valueEl) valueEl.textContent=code;
+    purchaseEl.style.display=currentUser?'inline-flex':'none';
+  }
+  const centralEl=document.getElementById('central-license-code');
+  if(centralEl) centralEl.textContent=code;
 }
 
 // ---- AUTH ----
@@ -792,6 +829,7 @@ function renderUserArea(){
   } else {
     el.innerHTML='<button class="user-btn" onclick="openAuth()"><i class="ti ti-user"></i> &#3648;&#3586;&#3657;&#3634;&#3626;&#3641;&#3656;&#3619;&#3632;&#3610;&#3610;</button>';
   }
+  renderAccountLicenseCode();
 }
 
 function openAuth(){ document.getElementById('auth-modal').classList.add('open'); }
@@ -1063,6 +1101,7 @@ async function refreshOwnedFonts(){
 }
 
 async function openPurchases(){
+  renderAccountLicenseCode();
   document.getElementById('pur-overlay').classList.add('open','purchase-open');
   const el=document.getElementById('pur-list');
   if(!currentUser){ el.innerHTML='<div class="empty-msg">&#3585;&#3619;&#3640;&#3603;&#3634;&#3648;&#3586;&#3657;&#3634;&#3626;&#3641;&#3656;&#3619;&#3632;&#3610;&#3610;&#3585;&#3656;&#3629;&#3609;</div>'; return; }
@@ -1318,7 +1357,7 @@ function openCart(){
 function removeCart(id){ cart=cart.filter(c=>c.id!==id); saveCartState(); render(); openCart(); }
 function closeOverlay(id){ document.getElementById(id).classList.remove('open','purchase-open'); }
 function closeCartOut(e){ if(e.target===document.getElementById('cart-overlay')) closeOverlay('cart-overlay'); }
-function openCentralLicense(){ document.getElementById('central-license-overlay').classList.add('open','purchase-open'); }
+function openCentralLicense(){ renderAccountLicenseCode(); document.getElementById('central-license-overlay').classList.add('open','purchase-open'); }
 function closeCentralLicense(){ document.getElementById('central-license-overlay').classList.remove('open','purchase-open'); }
 function closeCentralLicenseOut(e){ if(e.target===document.getElementById('central-license-overlay')) closeCentralLicense(); }
 
